@@ -60,3 +60,4 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+Llama-3.2-1B-Instruct-Q4_K_M.gguf
