@@ -12,7 +12,7 @@ enum LlamaModelError: Error {
     case initializationError
 }
 
-final class LlamaModel {
+public final class LlamaModel {
 
     // MARK: - Properties
 
@@ -21,7 +21,7 @@ final class LlamaModel {
 
     // MARK: - Lifecycle
 
-    init?(path: String, parameters: llama_model_params = llama_model_default_params()) {
+    public init?(path: String, parameters: llama_model_params = llama_model_default_params()) {
         guard let modelPointer = llama_model_load_from_file(path, parameters), let vocabPointer = llama_model_get_vocab(modelPointer) else {
             return nil
         }

@@ -10,6 +10,10 @@ import llama
 
 enum LlamaContextError: Error {
     case decodingError
+    case logitsUnavailable
+    case saveStateFailed
+    case loadStateFailed
+    case loraAdapterFailed(String)
 }
 
 final class LlamaContext {
@@ -70,5 +74,69 @@ final class LlamaContext {
 
     func synchronize() {
         llama_synchronize(contextPointer)
+    }
+
+    // MARK: - Adapters
+
+    /// Applies a LoRA adapter to the context.
+    /// - Parameters:
+    ///   - adapter: The `LlamaLoraAdapter` to apply.
+    ///   - scale: The scaling factor for the adapter's influence.
+    /// - Throws: `LlamaContextError.loraAdapterFailed` if the operation fails.
+    public func apply(loraAdapter: LlamaLoraAdapter, scale: Float = 1.0) throws {
+        let result = llama_set_adapter_lora(contextPointer, loraAdapter.adapterPointer, scale)
+        if result != 0 {
+            throw LlamaContextError.loraAdapterFailed("Failed to apply LoRA adapter.")
+        }
+    }
+
+    /// Removes a specific LoRA adapter from the context.
+    /// - Parameter adapter: The `LlamaLoraAdapter` to remove.
+    /// - Throws: `LlamaContextError.loraAdapterFailed` if the adapter is not found or cannot be removed.
+    public func remove(loraAdapter: LlamaLoraAdapter) throws {
+        let result = llama_rm_adapter_lora(contextPointer, loraAdapter.adapterPointer)
+        if result == -1 {
+            throw LlamaContextError.loraAdapterFailed("LoRA adapter not found in context.")
+        }
+    }
+
+    /// Removes all LoRA adapters from the context.
+    public func removeAllLoraAdapters() {
+        llama_clear_adapter_lora(contextPointer)
+    }
+
+    /// Applies a control vector to the context.
+    ///
+    /// This can be used to apply adjustments to the model's behavior.
+    ///
+    /// - Parameters:
+    ///   - data: A buffer of floats representing the control vector data. Should be `n_embd * n_layers`.
+    ///   - n_embd: The size of a single layer's control vector.
+    ///   - startLayer: The starting layer index for applying the vector (inclusive).
+    ///   - endLayer: The ending layer index for applying the vector (inclusive).
+    /// - Throws: `LlamaContextError.loraAdapterFailed` if applying the control vector fails.
+    public func apply(controlVector data: [Float], n_embd: Int32, startLayer: Int32, endLayer: Int32) throws {
+        let result = data.withUnsafeBufferPointer { bufferPointer in
+            llama_apply_adapter_cvec(
+                contextPointer,
+                bufferPointer.baseAddress,
+                size_t(bufferPointer.count),
+                n_embd,
+                startLayer,
+                endLayer
+            )
+        }
+        if result != 0 {
+            throw LlamaContextError.loraAdapterFailed("Failed to apply control vector.")
+        }
+    }
+
+    /// Clears the currently applied control vector.
+    /// - Throws: `LlamaContextError.loraAdapterFailed` if clearing fails.
+    public func clearControlVector() throws {
+        let result = llama_apply_adapter_cvec(contextPointer, nil, 0, 0, 0, 0)
+        if result != 0 {
+            throw LlamaContextError.loraAdapterFailed("Failed to clear control vector.")
+        }
     }
 }

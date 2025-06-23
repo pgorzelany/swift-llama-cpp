@@ -1,0 +1,135 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Swift Wrapper for C API Development Rules
+
+This document outlines the conventions and best practices for developing the Swift wrapper around the llama.cpp C API. The goal of this project is to create a safe, ergonomic, and idiomatic Swift interface that hides the complexities of the underlying C implementation.
+
+## 1. Class-based Resource Management
+
+- **Encapsulation**: Any C pointer (e.g., `llama_model*`) or C struct (e.g., `llama_batch`) that requires explicit deallocation via a C function (e.g., `llama_model_free`, `llama_batch_free`) **must** be wrapped in a `final class`. This is to ensure resource management is handled automatically via `deinit`. Simpler C structs that do not require explicit deallocation can be used directly, though they may be wrapped in a class or struct for convenience.
+
+- **RAII (Resource Acquisition Is Initialization)**:
+    - Resource acquisition (e.g., `llama_model_load_from_file`, `llama_batch_init`) must be performed within the class `init` method.
+    - Resource deallocation (e.g., `llama_model_free`, `llama_batch_free`) must be performed in the `deinit` method. This ensures that resources are automatically and safely released when the Swift object is deallocated.
+
+- **Failable Initializers**: If a resource acquisition function can fail (e.g., by returning a `NULL` pointer), the corresponding Swift class must use a failable initializer (`init?`). Return `nil` if the underlying C resource cannot be created.
+
+## 2. API Design
+
+- **Method Naming**: C API functions (`llama_function_name`) should be wrapped by Swift methods with idiomatic lowerCamelCase names (`functionName`).
+
+- **Error Handling**: For C functions that return an error code, the wrapping Swift method should `throw` a custom `Error` enum. This is preferable to returning status codes.
+
+- **Type Safety**: Hide pointer arithmetic and unsafe type conversions within the wrapper class. The public API should expose safe, native Swift types like `String`, `[llama_token]`, etc.
+
+- **Immutability**: Where possible, prefer `let` over `var`. Expose properties as read-only if they should not be modified by the consumer of the API.
+
+## 3. Code Style
+
+- **Clarity and Readability**: The primary goal is to create an API that is easy to understand and use for a Swift developer unfamiliar with the C API.
+- **Documentation**: Add comments to explain complex logic, especially around interactions with the C API. Use MARK comments to organize properties, lifecycle methods, and public methods.
+
+---
+
+### Example: Wrapping a C pointer
+
+**C API:**
+```c
+struct llama_model * llama_model_load_from_file(const char * path, ...);
+void llama_model_free(struct llama_model * model);
+```
+
+**Swift Wrapper:**
+```swift
+final class LlamaModel {
+    let modelPointer: OpaquePointer
+
+    init?(path: String, ...) {
+        guard let modelPointer = llama_model_load_from_file(path, ...) else {
+            return nil
+        }
+        self.modelPointer = modelPointer
+    }
+
+    deinit {
+        llama_model_free(modelPointer)
+    }
+
+    // ... other methods
+}
+```
+
+---
+### Example: Handling C Function Errors
+
+This example shows how to wrap a C function that returns an error code. The Swift method throws a custom error, which is more idiomatic than returning an integer code.
+
+**C API:**
+```c
+// Returns 0 on success
+int32_t llama_decode(
+        struct llama_context * ctx,
+          struct llama_batch   batch);
+```
+
+**Swift Wrapper:**
+```swift
+enum LlamaContextError: Error {
+    case decodingError
+}
+
+final class LlamaContext {
+    let contextPointer: OpaquePointer
+    // ... other properties and init
+
+    func decode(batch: LlamaBatch) throws {
+        let returnCode = llama_decode(contextPointer, batch.rawBatch)
+        guard returnCode == 0 else {
+            throw LlamaContextError.decodingError
+        }
+    }
+    // ...
+}
+```
+
+---
+### Example: Simplifying Complex Initialization
+
+This example demonstrates how a Swift wrapper can abstract away a multi-step C API initialization process, exposing a single, simpler initializer to the user.
+
+**C API:**
+```c
+struct llama_sampler_chain_params  llama_sampler_chain_default_params(void);
+struct llama_sampler * llama_sampler_chain_init(struct llama_sampler_chain_params params);
+void                   llama_sampler_chain_add(struct llama_sampler * chain, struct llama_sampler * smpl);
+struct llama_sampler * llama_sampler_init_top_k(int32_t k);
+// ... other samplers
+```
+
+**Swift Wrapper:**
+```swift
+final class LlamaSampler {
+    private let samplerPointer: UnsafeMutablePointer<llama_sampler>
+
+    init(config: LlamaSamplingConfig) {
+        let sparams = llama_sampler_chain_default_params()
+        self.samplerPointer = llama_sampler_chain_init(sparams)
+
+        // Add samplers based on the configuration
+        if let topK = config.topK {
+            let topKSampler = llama_sampler_init_top_k(topK)
+            llama_sampler_chain_add(samplerPointer, topKSampler)
+        }
+        // ... add other samplers from config
+    }
+
+    deinit {
+        llama_sampler_free(samplerPointer)
+    }
+
+    // ... other methods
+}
+```
