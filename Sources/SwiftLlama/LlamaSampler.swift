@@ -9,13 +9,36 @@
 import Foundation
 import llama
 
+/// A wrapper for the `llama.cpp` sampling chain (`llama_sampler_chain`).
+///
+/// This class configures and manages a series of samplers to control the token generation process.
+/// The chain can include samplers for grammar enforcement, temperature, top-k, top-p, and more.
 final class LlamaSampler {
     private let samplerPointer: UnsafeMutablePointer<llama_sampler>
 
-    init(config: LlamaSamplingConfig) {
+    /// Initializes a new sampling chain based on the provided configuration.
+    ///
+    /// The sampler chain is built in a specific order to ensure correctness.
+    /// If a grammar is provided in the `config`, it is always added first to constrain the possible tokens early.
+    /// Other samplers like top-k, top-p, and temperature are added afterward. The chain always ends with a
+    /// distribution sampler to make the final selection.
+    ///
+    /// - Parameters:
+    ///   - config: The `LlamaSamplingConfig` that defines which samplers to use and their parameters.
+    ///   - model: The `LlamaModel` is required to access the vocabulary for the grammar sampler.
+    init(config: LlamaSamplingConfig, model: LlamaModel) {
         print(config)
         let sparams = llama_sampler_chain_default_params()
         self.samplerPointer = llama_sampler_chain_init(sparams)
+
+        if let grammarConfig = config.grammarConfig {
+            if let grammarSampler = llama_sampler_init_grammar(model.vocabPointer, grammarConfig.grammar, grammarConfig.grammarRoot) {
+                llama_sampler_chain_add(samplerPointer, grammarSampler)
+            } else {
+                #warning("Throw an error instead")
+                print("Failed to initialize grammar sampler with grammar: \n\n\(grammarConfig.grammar)")
+            }
+        }
 
         // Add samplers based on the configuration
         if let topK = config.topK {
@@ -44,11 +67,31 @@ final class LlamaSampler {
         llama_sampler_free(samplerPointer)
     }
 
+    /// Samples a token from the model's output and implicitly accepts it.
+    ///
+    /// This is the primary method for token generation. It wraps the `llama_sampler_sample` C function, which:
+    /// 1. Applies the full sampler chain (grammar, top-k, temperature, etc.) to the logits.
+    /// 2. Selects a token.
+    /// 3. Automatically accepts the token, which updates the internal state of all samplers in the chain (e.g., advancing the grammar parser).
+    ///
+    /// - Parameters:
+    ///   - context: The current `LlamaContext`.
+    ///   - lastTokenIndex: The index of the token to sample from (usually -1 for the last token of the batch).
+    /// - Returns: The sampled `llama_token`.
     func sample(context: LlamaContext, lastTokenIndex: Int32) -> llama_token {
         #warning("Sampler usage example: https://github.com/ggerganov/llama.cpp/blob/564804b79b78df1469ec8646869972de5e885ec4/include/llama.h#L1065")
         return llama_sampler_sample(samplerPointer, context.contextPointer, lastTokenIndex)
     }
 
+    /// Manually accepts a token to update the state of the samplers in the chain.
+    ///
+    /// This method is primarily used to initialize the state of the samplers before generation begins.
+    /// For example, when using a grammar, you should call this method for each token in your prompt to ensure the
+    /// grammar state is correctly synchronized with the prompt's content.
+    ///
+    /// For the main generation loop, the `sample(context:lastTokenIndex:)` method should be used instead, as it handles acceptance automatically.
+    ///
+    /// - Parameter token: The `llama_token` to accept.
     func accept(token: llama_token) {
         llama_sampler_accept(samplerPointer, token)
     }
