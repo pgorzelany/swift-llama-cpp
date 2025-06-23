@@ -49,6 +49,16 @@ final class LlamaSampler {
         let topPSampler = llama_sampler_init_top_p(config.topP, config.minKeep)
         llama_sampler_chain_add(samplerPointer, topPSampler)
 
+        if let penaltyConfig = config.repetitionPenaltyConfig, penaltyConfig.lastN > 0 {
+            let penaltiesSampler = llama_sampler_init_penalties(
+                penaltyConfig.lastN,
+                penaltyConfig.repeatPenalty,
+                penaltyConfig.freqPenalty,
+                penaltyConfig.presentPenalty
+            )
+            llama_sampler_chain_add(samplerPointer, penaltiesSampler)
+        }
+
         // Always add temperature sampler
         let tempSampler = llama_sampler_init_temp(config.temperature)
         llama_sampler_chain_add(samplerPointer, tempSampler)
