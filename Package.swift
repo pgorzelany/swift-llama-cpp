@@ -12,8 +12,8 @@ let package = Package(
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
-            name: "LlamaSwift",
-            targets: ["LlamaSwift"]),
+            name: "SwiftLlama",
+            targets: ["SwiftLlama"]),
     ],
     dependencies: [
 //        .package(path: "/Users/mlody/Projects/AI/llama.cpp"),
@@ -22,7 +22,7 @@ let package = Package(
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "LlamaSwift",
+            name: "SwiftLlama",
             dependencies: [
                 "llama"
             ]
@@ -38,7 +38,7 @@ let package = Package(
         ),
         .testTarget(
             name: "LlamaSwiftTests",
-            dependencies: ["LlamaSwift"],
+            dependencies: ["SwiftLlama"],
             resources: [.copy("Models")]
         ),
     ]
