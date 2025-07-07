@@ -35,11 +35,11 @@ public final class LlamaModel {
 
     // MARK: - Methods
 
-    func trainedContextSize() -> Int32 {
+    public func trainedContextSize() -> Int32 {
         llama_model_n_ctx_train(modelPointer)
     }
 
-    func description() -> String {
+    public func description() -> String {
         let bufferSize = 1024
         var buffer = [CChar](repeating: 0, count: bufferSize)
         let descriptionBufferSize = llama_model_desc(modelPointer, &buffer, bufferSize)
@@ -49,14 +49,14 @@ public final class LlamaModel {
         return String(cString: buffer)
     }
 
-    func string(from token: llama_token) -> String {
+    public func string(from token: llama_token) -> String {
         guard let results = llama_vocab_get_text(vocabPointer, token) else {
             return ""
         }
         return String(cString: results, encoding: .utf8) ?? ""
     }
 
-    func piece(from token: llama_token) -> String {
+    public func piece(from token: llama_token) -> String {
         let bufferSize: Int32 = 32
         var buffer = [CChar](repeating: 0, count: Int(bufferSize))
         let charCount = llama_token_to_piece(vocabPointer, token, &buffer, bufferSize, 0, false)
@@ -64,11 +64,11 @@ public final class LlamaModel {
         return String(cString: chars, encoding: .utf8) ?? ""
     }
 
-    func bosToken() -> llama_token {
+    public func bosToken() -> llama_token {
         llama_vocab_bos(vocabPointer)
     }
 
-    func shouldAddBos() -> Bool {
+    public func shouldAddBos() -> Bool {
         let addBos = llama_vocab_get_add_bos(vocabPointer)
         if addBos {
             return llama_vocab_type(vocabPointer) == LLAMA_VOCAB_TYPE_SPM
@@ -76,15 +76,15 @@ public final class LlamaModel {
         return addBos
     }
 
-    func eosToken() -> llama_token {
+    public func eosToken() -> llama_token {
         llama_vocab_eos(modelPointer)
     }
 
-    func isEogToken(_ token: llama_token) -> Bool {
+    public func isEogToken(_ token: llama_token) -> Bool {
         llama_vocab_is_eog(vocabPointer, token)
     }
 
-    func tokenize(text: String, addBos: Bool, special: Bool) -> [llama_token] {
+    public func tokenize(text: String, addBos: Bool, special: Bool) -> [llama_token] {
         guard !text.isEmpty else {
             return []
         }
@@ -96,11 +96,11 @@ public final class LlamaModel {
         return Array(tokensBuffer.prefix(upTo: Int(tokenCount)))
     }
 
-    func vocabularySize() -> Int32 {
+    public func vocabularySize() -> Int32 {
         llama_vocab_n_tokens(vocabPointer)
     }
 
-    func applyChatTemplate(to messages: [LlamaChatMessage], addAssistant: Bool? = nil) -> String {
+    public func applyChatTemplate(to messages: [LlamaChatMessage], addAssistant: Bool? = nil) -> String {
         let cTemplatePointer = llama_model_chat_template(modelPointer, nil)
 
         // Convert Swift messages to C messages
@@ -143,7 +143,7 @@ public final class LlamaModel {
         return String(cString: buffer)
     }
 
-    func numberOfParameters() -> UInt64 {
+    public func numberOfParameters() -> UInt64 {
         return llama_model_n_params(modelPointer)
     }
 }

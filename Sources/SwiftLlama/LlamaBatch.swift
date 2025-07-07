@@ -7,13 +7,13 @@
 
 import llama
 
-final class LlamaBatch {
+public final class LlamaBatch {
     private(set) var rawBatch: llama_batch
-    var size: Int32 {
+    public var size: Int32 {
         rawBatch.n_tokens
     }
 
-    init(initialSize: Int32) {
+    public init(initialSize: Int32) {
         self.rawBatch = llama_batch_init(initialSize, 0, 1)
     }
 
@@ -21,11 +21,11 @@ final class LlamaBatch {
         llama_batch_free(rawBatch)
     }
 
-    func reset() {
+    public func reset() {
         rawBatch.n_tokens = 0
     }
 
-    func addToken(_ tokenId: llama_token, at position: llama_pos, logits: Bool) {
+    public func addToken(_ tokenId: llama_token, at position: llama_pos, logits: Bool) {
         rawBatch.token[Int(rawBatch.n_tokens)] = tokenId
         rawBatch.pos[Int(rawBatch.n_tokens)] = position
 
@@ -38,7 +38,7 @@ final class LlamaBatch {
         rawBatch.n_tokens += 1
     }
 
-    func setLastTokenLogits(_ logits: Bool) {
+    public func setLastTokenLogits(_ logits: Bool) {
         rawBatch.logits[Int(rawBatch.n_tokens - 1)] = logits ? 1 : 0
     }
 }

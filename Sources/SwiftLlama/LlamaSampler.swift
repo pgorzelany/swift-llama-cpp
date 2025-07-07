@@ -13,7 +13,7 @@ import llama
 ///
 /// This class configures and manages a series of samplers to control the token generation process.
 /// The chain can include samplers for grammar enforcement, temperature, top-k, top-p, and more.
-final class LlamaSampler {
+public final class LlamaSampler {
     private let samplerPointer: UnsafeMutablePointer<llama_sampler>
 
     /// Initializes a new sampling chain based on the provided configuration.
@@ -26,7 +26,7 @@ final class LlamaSampler {
     /// - Parameters:
     ///   - config: The `LlamaSamplingConfig` that defines which samplers to use and their parameters.
     ///   - model: The `LlamaModel` is required to access the vocabulary for the grammar sampler.
-    init(config: LlamaSamplingConfig, model: LlamaModel) {
+    public init(config: LlamaSamplingConfig, model: LlamaModel) {
         print(config)
         let sparams = llama_sampler_chain_default_params()
         self.samplerPointer = llama_sampler_chain_init(sparams)
@@ -88,7 +88,7 @@ final class LlamaSampler {
     ///   - context: The current `LlamaContext`.
     ///   - lastTokenIndex: The index of the token to sample from (usually -1 for the last token of the batch).
     /// - Returns: The sampled `llama_token`.
-    func sample(context: LlamaContext, lastTokenIndex: Int32) -> llama_token {
+    public func sample(context: LlamaContext, lastTokenIndex: Int32) -> llama_token {
         #warning("Sampler usage example: https://github.com/ggerganov/llama.cpp/blob/564804b79b78df1469ec8646869972de5e885ec4/include/llama.h#L1065")
         return llama_sampler_sample(samplerPointer, context.contextPointer, lastTokenIndex)
     }
@@ -102,7 +102,7 @@ final class LlamaSampler {
     /// For the main generation loop, the `sample(context:lastTokenIndex:)` method should be used instead, as it handles acceptance automatically.
     ///
     /// - Parameter token: The `llama_token` to accept.
-    func accept(token: llama_token) {
+    public func accept(token: llama_token) {
         llama_sampler_accept(samplerPointer, token)
     }
 }
