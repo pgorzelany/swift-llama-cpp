@@ -10,17 +10,13 @@ let package = Package(
         .iOS(.v17)
     ],
     products: [
-        // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
             name: "SwiftLlama",
             targets: ["SwiftLlama"]),
     ],
     dependencies: [
-//        .package(path: "/Users/mlody/Projects/AI/llama.cpp"),
     ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
         .target(
             name: "SwiftLlama",
             dependencies: [
@@ -33,7 +29,7 @@ let package = Package(
             checksum: "95fefedf06f445a9c36b06b65bbfcfe401e38a84190ceeb14360e3bc22a3a5d6"
         ),
         .testTarget(
-            name: "LlamaSwiftTests",
+            name: "SwiftLlamaTests",
             dependencies: ["SwiftLlama"],
             resources: [.copy("Models")]
         ),
