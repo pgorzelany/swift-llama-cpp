@@ -27,14 +27,10 @@ let package = Package(
                 "llama"
             ]
         ),
-//        .binaryTarget(
-//            name: "llama",
-//            url: "https://github.com/ggml-org/llama.cpp/releases/download/b5526/llama-b5526-xcframework.zip",
-//            checksum: "d8aa166eb90f4235ae09a8f88dc8c59d416dbc8a0e531eacda08166e315cf2fa"
-//        ),
         .binaryTarget(
             name: "llama",
-            path: "./llama-b5215-xcframework.zip"
+            url: "https://github.com/ggml-org/llama.cpp/releases/download/b5880/llama-b5880-xcframework.zip",
+            checksum: "95fefedf06f445a9c36b06b65bbfcfe401e38a84190ceeb14360e3bc22a3a5d6"
         ),
         .testTarget(
             name: "LlamaSwiftTests",
