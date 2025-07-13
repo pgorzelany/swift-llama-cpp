@@ -1,5 +1,4 @@
 import Foundation
-import SwiftLlama
 import llama
 
 public enum LlamaError: Error{
