@@ -69,43 +69,37 @@ final class LlamaPerformanceTests: XCTestCase {
 extension LlamaPerformanceTests {
     var expectedCompletion: String {
     """
-    In the year 2154, humanity had finally achieved the impossible: establishing a thriving, self-sustaining colony on the red planet of Mars. The initial landing site, dubbed Nova Terra, was a small, cratered region in the Martian equatorial region. The first waves of settlers, led by the brilliant and driven Dr. Sofia Patel, began to arrive on the planet about 20 years ago.
+    In the year 2154, humanity had finally achieved the impossible: establishing a thriving colony on Mars. The Red Planet, once considered too harsh and inhospitable for human habitation, had been transformed into a paradise of sorts. The Martian settlers, known as the Redbranders, had worked tirelessly to create a new society that would thrive on the unforgiving alien landscape.
 
-    The early colonists faced numerous challenges, from the harsh Martian environment to the psychological strain of being isolated from Earth for so long. However, as the years went by, the settlers began to adapt, and the colony grew. New technologies and innovations were developed to overcome the difficulties, and the Martian settlers proved to be resourceful and resilient.
+    The initial colonization effort was led by a brilliant scientist and engineer named Dr. Sofia Patel, who had spent years studying the Martian environment and developing innovative technologies to sustain life on the red planet. The Redbranders' first settlement, named Nova Terra, was a sprawling city that stretched across the Martian surface, with towering skyscrapers and advanced life support systems.
 
-    The first generation of settlers established a thriving agricultural community, cultivating the Martian soil to produce enough food for the colony. The second generation focused on establishing a robust energy infrastructure, harnessing the planet's limited sunlight to generate power. The third generation, however, laid the groundwork for the colonization of Mars itself.
+    As the years passed, the Redbranders continued to expand their colony, establishing new settlements and habitats throughout the Martian terrain. They built state-of-the-art research facilities, conducting cutting-edge studies on Martian geology, atmosphere, and ecology. The Redbranders were also pioneers in terraforming, using advanced technologies to alter the Martian environment to make it more hospitable for human life.
 
-    A group of scientists, led by Dr. Liam Chen, were chosen to explore the possibility of terraforming Mars. They traveled to the Martian poles, where they discovered vast reserves of water ice and a thin atmosphere. The team developed a revolutionary new technology, dubbed "Mars-Dry," which used advanced nanotechnology to extract water from the Martian soil and condense it into usable liquid.
+    One of the most significant innovations was the development of a revolutionary new technology called the "Atmospheric Respiration System" (ARS). This system, which used advanced nanotechnology and artificial intelligence to clean the Martian atmosphere of toxic gases, allowed humans to breathe easily on the red planet. The ARS had also enabled the Redbranders to grow a variety of crops, using advanced hydroponics and aeroponics systems.
 
-    The Mars-Dry technology was met with skepticism at first, but as the settlers began to notice the effects of this new resource, they realized its potential. The technology enabled the creation of a stable and sustainable atmosphere, allowing the colonists to establish a reliable food supply.
+    As the colony grew, so did its population. The Redbranders were attracted to Mars by its potential for scientific discovery and exploration. Many of them came from all over the world, drawn by the promise of a new home on the red planet. The Martian society was a melting pot of cultures and backgrounds, with people from all walks of life coming together to build a new community.
 
-    The next step in the colonization process was the establishment of a robust infrastructure. The settlers built massive solar farms, harnessing the energy of the sun to power the colony. They also developed advanced water recycling systems, reducing the need for Earth-based supplies.
+    The government of Nova Terra was led by a council of leaders who were chosen for their wisdom, integrity, and dedication to the colony. The council was advised by a team of scientists and engineers who had spent years studying the Martian environment and developing strategies for its long-term sustainability.
 
-    As the colony grew, the settlers began to explore the Martian surface. The first expedition, led by Dr. Sofia Patel, reached the Martian equatorial region and discovered a vast, ancient riverbed. The team used advanced geological instruments to study the riverbed, learning about the planet's geological history.
+    One of the most important figures in the council was Dr. Liam Chen, a brilliant astrobiologist who had spent years searching for signs of life on Mars. He had discovered evidence of ancient microbial life on the Martian surface, and his findings had sparked a new wave of scientific research into the planet's potential for supporting life.
 
-    The findings of the expedition sparked a new wave of research and exploration. The settlers began to map the Martian surface, identifying vast areas of unexplored terrain. They also discovered evidence of ancient civilizations, dating back millions of years.
+    As the years passed, the Redbranders continued to explore Mars, discovering new wonders and marvels on every turn. They built a network of advanced research facilities, which included state-of-the-art laboratories, observatories, and libraries. The Redbranders were also pioneers in the field of astrobiology, using advanced technologies to search for signs of life on other planets.
 
-    One of the most significant discoveries was the presence of a massive, ancient city. The city, known as Aridos, was hidden deep within the Martian terrain, protected by towering mountain ranges and treacherous canyons. The team used advanced scanning technology to map the city's layout, revealing a sprawling metropolis with towering spires and grand architecture.
+    One of the most significant discoveries made by the Redbranders was the detection of evidence of ancient Martian civilization. The team led by Dr. Sofia Patel had discovered a massive, abandoned city on the Martian surface, hidden beneath layers of Martian regolith and debris.
 
-    The discovery of Aridos sent shockwaves throughout the Martian colony. The settlers realized that they had stumbled upon a major archaeological site, one that could hold the secrets of human civilization's past.
+    The city was estimated to be over 2 million years old, and it was a testament to the ingenuity and technological prowess of the Martian civilization that had once flourished on the red planet. The Redbranders were fascinated by this discovery, and they quickly set about studying the city and its artifacts in detail.
 
-    As the years went by, the Martian colony continued to thrive. The settlers established a new society, one that was deeply connected to the planet and its unique environment. They developed advanced technologies to harness the Martian resources, and the planet became a thriving, self-sustaining ecosystem.
+    As they delved deeper into the mystery of the ancient Martian civilization, the Redbranders began to uncover a complex web of technological innovations and scientific achievements. They discovered evidence of advanced propulsion systems, exotic energy sources, and even ancient artifacts that defied explanation.
 
-    The Martian colony became a beacon of hope for humanity, a symbol of what could be achieved through determination and innovation. The settlers continued to explore, discovering new resources and pushing the boundaries of what was thought possible.
+    The discovery sparked a new wave of research and exploration, as the Redbranders sought to understand the secrets of the ancient Martian civilization. They built advanced databases and archives, storing vast amounts of information about the city and its artifacts.
 
-    However, as the Martian colony continued to grow, new challenges arose. The settlers faced the ever-present threat of asteroid impacts, and the need to establish a reliable food supply became increasingly pressing.
+    The discovery also sparked a new wave of scientific inquiry into the Martian environment. The Redbranders began to study the planet's geology, atmosphere, and ecology in greater detail than ever before. They discovered new species of plants and animals that had adapted to the Martian environment, and they began to develop advanced technologies for terraforming and engineering.
 
-    The fourth generation of settlers, led by Dr. Sofia Patel's own son, Dr. Rohan Patel, was tasked with addressing these challenges. They developed advanced technologies to deflect asteroids, and established a thriving aquaculture industry, using the Martian soil to produce fresh seafood.
+    As the years passed, the Redbranders continued to explore Mars, always seeking new discoveries and insights. They became a presence on the Martian surface that was felt by all who lived there, a testament to their hard work and dedication.
 
-    The fifth generation, led by Dr. Liam Chen's own daughter, Dr. Ava Chen, continued to push the boundaries of what was possible. They developed advanced terraforming technologies, using the Martian atmosphere to create a breathable air supply.
+    In 2175, the council of leaders announced plans for a new era of growth and development on Mars. The Redbranders had proven themselves capable of thriving in the harsh Martian environment, and they were eager to take their colony to the next level.
 
-    The sixth generation, led by Dr. Sofia Patel's own granddaughter, Dr. Aria Patel, took the reins of the colony. They established a new era of exploration, using advanced technologies to search for new sources of resources and new worlds to colonize.
-
-    As the years went by, the Martian colony continued to thrive. The settlers became a diverse, multigenerational society, each contributing their unique perspective and expertise to the colony's growth.
-
-    But just as the colony seemed to be nearing its goal of self-sufficiency, a new challenge arose. A massive, long-lost civilization on Mars, known as the N'Tari, was discovered using advanced technologies to harness the planet's energy.
-
-    The N'Tari civilization had been wiped out by a catastrophic event
+    The council announced a new initiative called "Mars Terraforming Project," which would aim to transform the Martian surface into a habitable environment for human life. The project was led by Dr.
     """
     }
 }

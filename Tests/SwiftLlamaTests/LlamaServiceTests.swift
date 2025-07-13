@@ -66,7 +66,6 @@ final class LlamaServicePerformanceTests: XCTestCase {
 
             // Example assertion (adjust threshold as needed)
             XCTAssert(tokensPerSecond > 24, "Token generation is too slow: \(tokensPerSecond) tokens/second.")
-//            XCTAssertEqual(generatedText, expectedCompletion)
 
         } catch {
             XCTFail("streamCompletion threw an error: \(error)")
