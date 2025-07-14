@@ -20,6 +20,9 @@ public final class LlamaContext {
     // MARK: - Properties
 
     public let model: LlamaModel
+    var memory: LlamaMemory {
+        LlamaMemory(memory: llama_get_memory(contextPointer))
+    }
     let contextPointer: OpaquePointer
 
     // MARK: - Lifecycle
@@ -47,13 +50,13 @@ public final class LlamaContext {
     }
 
     public func clearKVCache() {
-        llama_kv_self_clear(contextPointer)
+        memory.clear(data: true)
     }
 
     public func clearKVCacheFromPosition(_ position: Int32) {
         // Remove KV cache entries from the given position to the end
         // seq_id = -1 means all sequences, p0 = position, p1 = -1 means to the end
-        llama_kv_self_seq_rm(contextPointer, -1, position, -1)
+        memory.remove(sequenceId: -1, from: position, to: -1)
     }
 
     public func decode(batch: LlamaBatch) throws {
