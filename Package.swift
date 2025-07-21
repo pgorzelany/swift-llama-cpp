@@ -3,6 +3,9 @@
 
 import PackageDescription
 
+let llamaVersion = "b5954"
+let llamaChecksum = "929ce60d47a6aa1ecdd0dd301526a390c9637baa6d5c24121398846c47e4de49"
+
 let package = Package(
     name: "swift-llama-cpp",
     platforms: [
@@ -25,8 +28,8 @@ let package = Package(
         ),
         .binaryTarget(
             name: "llama",
-            url: "https://github.com/ggml-org/llama.cpp/releases/download/b5880/llama-b5880-xcframework.zip",
-            checksum: "95fefedf06f445a9c36b06b65bbfcfe401e38a84190ceeb14360e3bc22a3a5d6"
+            url: "https://github.com/ggml-org/llama.cpp/releases/download/\(llamaVersion)/llama-\(llamaVersion)-xcframework.zip",
+            checksum: llamaChecksum
         ),
         .testTarget(
             name: "SwiftLlamaTests",

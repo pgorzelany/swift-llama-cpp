@@ -56,7 +56,7 @@ public final class LlamaContext {
     public func clearKVCacheFromPosition(_ position: Int32) {
         // Remove KV cache entries from the given position to the end
         // seq_id = -1 means all sequences, p0 = position, p1 = -1 means to the end
-        memory.remove(sequenceId: -1, from: position, to: -1)
+        memory.remove(sequenceId: 0, from: position, to: -1)
     }
 
     public func decode(batch: LlamaBatch) throws {
