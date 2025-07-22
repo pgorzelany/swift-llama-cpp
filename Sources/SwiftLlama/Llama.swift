@@ -96,7 +96,13 @@ final actor Llama {
             
             if divergenceIndex > 0 && shouldUsePartialOptimization(divergenceIndex: divergenceIndex, totalProcessed: processedTokens.count) {
                 print("### Using partial optimization from position \(divergenceIndex)")
-                try optimizedReprocessing(newTokenList: tokenList, divergenceIndex: divergenceIndex)
+                do {
+                    try optimizedReprocessing(newTokenList: tokenList, divergenceIndex: divergenceIndex)
+                } catch {
+                    print("Partial optimization failed, falling back to full reprocessing")
+                    clear()
+                    try processPrompt(tokens: tokenList, startIndex: 0)
+                }
             } else {
                 print("### Full reprocessing required")
                 clear()
