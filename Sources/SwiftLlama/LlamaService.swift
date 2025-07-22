@@ -42,9 +42,14 @@ public final actor LlamaService {
                 do {
                     var tokenBuffer: [String] = []
                     generationLoop: while await (llama.currentTokenPosition < llama.maxTokenCount) {
-                        guard !Task.isCancelled else { break }
+                        guard !Task.isCancelled else {
+                            if !tokenBuffer.isEmpty {
+                                continuation.yield(tokenBuffer.joined())
+                                tokenBuffer = []
+                            }
+                            break
+                        }
                         let result = try await llama.generateNextToken()
-                        guard !Task.isCancelled else { break }
                         switch result {
                         case .token(let token):
                             tokenBuffer.append(token)
