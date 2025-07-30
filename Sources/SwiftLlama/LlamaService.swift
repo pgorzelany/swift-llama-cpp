@@ -32,6 +32,7 @@ public final actor LlamaService {
     }
 
     public func streamCompletion(of messages: [LlamaChatMessage], samplingConfig: LlamaSamplingConfig) async throws -> AsyncThrowingStream<String, Error> {
+        guard !messages.isEmpty else { throw LlamaError.emptyMessageArray }
         let llama = try initializeLlamaIfNecessary()
         await stopCompletion()
         try await  llama.initializeCompletion(messages: messages)

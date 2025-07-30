@@ -132,7 +132,8 @@ final class LlamaServiceTests: XCTestCase {
     func testTemperatureEffectsOnOutput() async throws {
         // Given
         let messages = createSimpleMessages()
-        let temperatureValues: [Float] = Array(stride(from: 0.1, through: 2.0, by: 0.1))
+        #warning("When changing temperature tokens stop being generated. There seems to be an issue in the sampling logic.")
+        let temperatureValues: [Float] = Array(stride(from: 0.0, through: 2.0, by: 0.1))
         var results: [(temperature: Float, output: String, success: Bool)] = []
         
         print("=== Temperature Effects Test Results ===")
