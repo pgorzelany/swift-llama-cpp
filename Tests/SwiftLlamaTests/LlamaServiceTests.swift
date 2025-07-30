@@ -6,6 +6,7 @@
 //
 
 import XCTest
+import OSLog
 @testable import SwiftLlama
 
 final class LlamaServiceTests: XCTestCase {
@@ -20,11 +21,14 @@ final class LlamaServiceTests: XCTestCase {
         static let minimumTokensPerSecond: Double = 24.0
         static let testSeed: UInt32 = 42
         static let shortTestTokens = 50
+        static let grammarPerformanceTokens = 100
+        static let grammarMinimumTokensPerSecond: Double = 12.0
     }
     
     // MARK: - Properties
     
     private var llamaService: LlamaService!
+    private let logger = Logger(subsystem: "SwiftLlamaTests", category: "LlamaServiceTests")
     
     // MARK: - Setup and Teardown
 
@@ -66,10 +70,45 @@ final class LlamaServiceTests: XCTestCase {
         )
         
         // Log performance metrics
-        print("=== Performance Test Results ===")
-        print("Generated \(result.tokenCount) tokens")
-        print("Speed: \(String(format: "%.2f", result.tokensPerSecond)) tokens/second")
-        print("Generated text preview: \(String(result.generatedText.prefix(100)))...")
+        logger.info("=== Performance Test Results ===")
+        logger.info("Generated \(result.tokenCount) tokens")
+        logger.info("Speed: \(String(format: "%.2f", result.tokensPerSecond), privacy: .public) tokens/second")
+        logger.info("Generated text preview: \(String(result.generatedText.prefix(100)), privacy: .public)...")
+    }
+    
+    func testGrammarGenerationPerformance() async throws {
+        // Given
+        let messages = createJSONMessages()
+        let samplingConfig = try createJSONSamplingConfig()
+        
+        // When
+        let result = try await measureTokenGenerationPerformance(
+            messages: messages,
+            samplingConfig: samplingConfig,
+            targetTokens: TestConfig.grammarPerformanceTokens
+        )
+        
+        // Then
+        XCTAssertEqual(
+            result.tokenCount,
+            TestConfig.grammarPerformanceTokens,
+            "Grammar generation should complete target tokens"
+        )
+        
+        XCTAssertGreaterThan(
+            result.tokensPerSecond,
+            TestConfig.grammarMinimumTokensPerSecond,
+            "Grammar generation should maintain minimum performance"
+        )
+        
+        // Verify grammar output is actually valid JSON
+        _ = try validateJSON(result.generatedText)
+        
+        // Log performance metrics
+        logger.info("=== Grammar Generation Performance ===")
+        logger.info("Generated \(result.tokenCount) tokens")
+        logger.info("Speed: \(String(format: "%.2f", result.tokensPerSecond), privacy: .public) tokens/second")
+        logger.info("Valid JSON generated: \(result.generatedText.prefix(100), privacy: .public)...")
     }
 
     // MARK: - Grammar Tests
@@ -92,9 +131,9 @@ final class LlamaServiceTests: XCTestCase {
         let jsonObject = try validateJSON(generatedText)
         
         // Log results
-        print("=== JSON Generation Test Results ===")
-        print("Generated JSON: \(generatedText)")
-        print("Parsed object keys: \(Array(jsonObject.keys))")
+        logger.info("=== JSON Generation Test Results ===")
+        logger.info("Generated JSON: \(generatedText, privacy: .public)")
+        logger.info("Parsed object keys: \(Array(jsonObject.keys), privacy: .public)")
         
         // Verify structure (optional - could be more specific based on requirements)
         XCTAssertTrue(jsonObject.count > 0, "JSON object should have at least one property")
@@ -118,11 +157,11 @@ final class LlamaServiceTests: XCTestCase {
         let jsonArray = try validateJSONArray(generatedText)
         
         // Log results
-        print("=== JSON Array Generation Test Results ===")
-        print("Generated JSON Array: \(generatedText)")
-        print("Array contains \(jsonArray.count) elements")
+        logger.info("=== JSON Array Generation Test Results ===")
+        logger.info("Generated JSON Array: \(generatedText, privacy: .public)")
+        logger.info("Array contains \(jsonArray.count) elements")
         if !jsonArray.isEmpty {
-            print("First element type: \(type(of: jsonArray[0]))")
+            logger.info("First element type: \(String(describing: type(of: jsonArray[0])), privacy: .public)")
         }
         
         // Verify structure
@@ -153,9 +192,9 @@ final class LlamaServiceTests: XCTestCase {
         // Then
         XCTAssertEqual(result1, result2, "Same seed should produce identical output")
         
-        print("=== Reproducibility Test Results ===")
-        print("Output 1: \(result1)")
-        print("Output 2: \(result2)")
+        logger.info("=== Reproducibility Test Results ===")
+        logger.info("Output 1: \(result1, privacy: .public)")
+        logger.info("Output 2: \(result2, privacy: .public)")
     }
     
     func testTemperatureEffectsOnOutput() async throws {
@@ -165,8 +204,8 @@ final class LlamaServiceTests: XCTestCase {
         let temperatureValues: [Float] = Array(stride(from: 0.0, through: 2.0, by: 0.1))
         var results: [(temperature: Float, output: String, success: Bool)] = []
         
-        print("=== Temperature Effects Test Results ===")
-        print("Testing temperatures from 0.0 to 2.0 in 0.1 intervals...")
+        logger.info("=== Temperature Effects Test Results ===")
+        logger.info("Testing temperatures from 0.0 to 2.0 in 0.1 intervals...")
         
         // When - Test each temperature value
         for temperature in temperatureValues {
@@ -188,7 +227,7 @@ final class LlamaServiceTests: XCTestCase {
                 // Log each result
                 let formattedTemp = String(format: "%.1f", temperature)
                 let preview = result.prefix(30).replacingOccurrences(of: "\n", with: "\\n")
-                print("Temp \(formattedTemp): ✅ \"\(preview)\"")
+                logger.info("Temp \(formattedTemp, privacy: .public): ✅ \"\(preview, privacy: .public)\"")
                 
                 // Then - Verify output was generated
                 XCTAssertFalse(result.isEmpty, "Temperature \(formattedTemp) should generate text")
@@ -196,7 +235,7 @@ final class LlamaServiceTests: XCTestCase {
             } catch {
                 results.append((temperature: temperature, output: "", success: false))
                 let formattedTemp = String(format: "%.1f", temperature)
-                print("Temp \(formattedTemp): ❌ Error: \(error)")
+                logger.error("Temp \(formattedTemp, privacy: .public): ❌ Error: \(error)")
                 XCTFail("Temperature \(formattedTemp) failed with error: \(error)")
             }
         }
@@ -205,13 +244,13 @@ final class LlamaServiceTests: XCTestCase {
         let successfulTests = results.filter { $0.success }
         let failedTests = results.filter { !$0.success }
         
-        print("\n=== Summary ===")
-        print("Successful temperatures: \(successfulTests.count)/\(results.count)")
-        print("Failed temperatures: \(failedTests.count)")
+        logger.info("=== Summary ===")
+        logger.info("Successful temperatures: \(successfulTests.count)/\(results.count)")
+        logger.info("Failed temperatures: \(failedTests.count)")
         
         if !failedTests.isEmpty {
             let failedTemps = failedTests.map { String(format: "%.1f", $0.temperature) }
-            print("Failed at temperatures: \(failedTemps.joined(separator: ", "))")
+            logger.error("Failed at temperatures: \(failedTemps.joined(separator: ", "), privacy: .public)")
         }
         
         // Assert that most temperatures work (allowing for some edge case failures)
@@ -238,8 +277,8 @@ final class LlamaServiceTests: XCTestCase {
         // Then
         XCTAssertFalse(result.isEmpty, "Top-K sampling should still generate text")
         
-        print("=== Top-K Sampling Test Results ===")
-        print("Generated with top-K=5: \(result)")
+        logger.info("=== Top-K Sampling Test Results ===")
+        logger.info("Generated with top-K=5: \(result, privacy: .public)")
     }
     
     func testRepetitionPenaltyConfiguration() async throws {
@@ -267,8 +306,8 @@ final class LlamaServiceTests: XCTestCase {
         // Then
         XCTAssertFalse(result.isEmpty, "Should generate text with repetition penalty")
         
-        print("=== Repetition Penalty Test Results ===")
-        print("Generated with penalties: \(result)")
+        logger.info("=== Repetition Penalty Test Results ===")
+        logger.info("Generated with penalties: \(result, privacy: .public)")
     }
     
     // MARK: - Edge Case Tests
@@ -284,8 +323,8 @@ final class LlamaServiceTests: XCTestCase {
             XCTFail("Should throw an error for empty messages")
         } catch {
             // Expected to fail - empty messages should not be allowed
-            print("=== Empty Message Test Results ===")
-            print("Correctly failed with error: \(error)")
+            logger.info("=== Empty Message Test Results ===")
+            logger.info("Correctly failed with error: \(error)")
         }
     }
     
@@ -306,8 +345,8 @@ final class LlamaServiceTests: XCTestCase {
         // Then
         XCTAssertFalse(result.isEmpty, "Should handle very short prompts")
         
-        print("=== Short Prompt Test Results ===")
-        print("Response to 'Hi': \(result)")
+        logger.info("=== Short Prompt Test Results ===")
+        logger.info("Response to 'Hi': \(result, privacy: .public)")
     }
     
     func testUnicodeAndSpecialCharacters() async throws {
@@ -327,8 +366,8 @@ final class LlamaServiceTests: XCTestCase {
         // Then
         XCTAssertFalse(result.isEmpty, "Should handle Unicode and special characters")
         
-        print("=== Unicode Test Results ===")
-        print("Unicode response: \(result)")
+        logger.info("=== Unicode Test Results ===")
+        logger.info("Unicode response: \(result, privacy: .public)")
     }
     
     // MARK: - Cancellation Tests
@@ -358,8 +397,8 @@ final class LlamaServiceTests: XCTestCase {
         XCTAssertGreaterThan(tokenCount, 0, "Should have generated some tokens before cancellation")
         XCTAssertLessThanOrEqual(tokenCount, 15, "Should have stopped generation quickly after cancellation")
         
-        print("=== Cancellation Test Results ===")
-        print("Generated \(tokenCount) tokens before cancellation: \(generatedText)")
+        logger.info("=== Cancellation Test Results ===")
+        logger.info("Generated \(tokenCount) tokens before cancellation: \(generatedText, privacy: .public)")
     }
 }
 
