@@ -1,12 +1,6 @@
 import Foundation
 import llama
 
-public enum LlamaError: Error{
-    case couldNotInitializeContext
-    case contextSizeLimitExeeded
-    case decodingError
-}
-
 enum NextToken {
     case token(String)
     case endOfString

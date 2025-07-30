@@ -106,15 +106,15 @@ final class LlamaServiceTests: XCTestCase {
         // Given
         let messages = createSimpleMessages()
         let seed: UInt32 = 12345
-        let samplingConfig = LlamaSamplingConfig(temperature: 0.0, seed: seed)
-        
+        let samplingConfig = LlamaSamplingConfig(temperature: 0.1, seed: seed)
+
         // When - Generate same content twice with same seed
         let result1 = try await generateLimitedText(
             messages: messages,
             samplingConfig: samplingConfig,
             maxTokens: TestConfig.shortTestTokens
         )
-        
+
         let result2 = try await generateLimitedText(
             messages: messages,
             samplingConfig: samplingConfig,
@@ -122,7 +122,7 @@ final class LlamaServiceTests: XCTestCase {
         )
         
         // Then
-        XCTAssertEqual(result1, result2, "Same seed should produce identical output with temperature 0.0")
+        XCTAssertEqual(result1, result2, "Same seed should produce identical output")
         
         print("=== Reproducibility Test Results ===")
         print("Output 1: \(result1)")
@@ -132,7 +132,7 @@ final class LlamaServiceTests: XCTestCase {
     func testTemperatureEffectsOnOutput() async throws {
         // Given
         let messages = createSimpleMessages()
-        let lowTempConfig = LlamaSamplingConfig(temperature: 0.0, seed: TestConfig.testSeed)
+        let lowTempConfig = LlamaSamplingConfig(temperature: 0.1, seed: TestConfig.testSeed)
         let highTempConfig = LlamaSamplingConfig(temperature: 1.0, seed: TestConfig.testSeed)
         
         // When
