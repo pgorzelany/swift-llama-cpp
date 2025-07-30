@@ -86,11 +86,10 @@ public final class LlamaSampler {
     ///
     /// - Parameters:
     ///   - context: The current `LlamaContext`.
-    ///   - lastTokenIndex: The index of the token to sample from (usually -1 for the last token of the batch).
     /// - Returns: The sampled `llama_token`.
-    public func sample(context: LlamaContext, lastTokenIndex: Int32) -> llama_token {
+    public func sample(context: LlamaContext) -> llama_token {
         #warning("Sampler usage example: https://github.com/ggerganov/llama.cpp/blob/564804b79b78df1469ec8646869972de5e885ec4/include/llama.h#L1065")
-        return llama_sampler_sample(samplerPointer, context.contextPointer, lastTokenIndex)
+        return llama_sampler_sample(samplerPointer, context.contextPointer, -1)
     }
 
     /// Manually accepts a token to update the state of the samplers in the chain.

@@ -132,29 +132,61 @@ final class LlamaServiceTests: XCTestCase {
     func testTemperatureEffectsOnOutput() async throws {
         // Given
         let messages = createSimpleMessages()
-        let lowTempConfig = LlamaSamplingConfig(temperature: 0.1, seed: TestConfig.testSeed)
-        let highTempConfig = LlamaSamplingConfig(temperature: 1.0, seed: TestConfig.testSeed)
-        
-        // When
-        let lowTempResult = try await generateLimitedText(
-            messages: messages,
-            samplingConfig: lowTempConfig,
-            maxTokens: TestConfig.shortTestTokens
-        )
-        
-        let highTempResult = try await generateLimitedText(
-            messages: messages,
-            samplingConfig: highTempConfig,
-            maxTokens: TestConfig.shortTestTokens
-        )
-        
-        // Then
-        XCTAssertFalse(lowTempResult.isEmpty, "Low temperature should generate text")
-        XCTAssertFalse(highTempResult.isEmpty, "High temperature should generate text")
+        let temperatureValues: [Float] = Array(stride(from: 0.1, through: 2.0, by: 0.1))
+        var results: [(temperature: Float, output: String, success: Bool)] = []
         
         print("=== Temperature Effects Test Results ===")
-        print("Low temp (0.0): \(lowTempResult)")
-        print("High temp (1.0): \(highTempResult)")
+        print("Testing temperatures from 0.0 to 2.0 in 0.1 intervals...")
+        
+        // When - Test each temperature value
+        for temperature in temperatureValues {
+            let samplingConfig = LlamaSamplingConfig(
+                temperature: temperature,
+                seed: TestConfig.testSeed
+            )
+            
+            do {
+                let result = try await generateLimitedText(
+                    messages: messages,
+                    samplingConfig: samplingConfig,
+                    maxTokens: 20 // Shorter for this test
+                )
+                
+                let success = !result.isEmpty
+                results.append((temperature: temperature, output: result, success: success))
+                
+                // Log each result
+                let formattedTemp = String(format: "%.1f", temperature)
+                let preview = result.prefix(30).replacingOccurrences(of: "\n", with: "\\n")
+                print("Temp \(formattedTemp): ✅ \"\(preview)\"")
+                
+                // Then - Verify output was generated
+                XCTAssertFalse(result.isEmpty, "Temperature \(formattedTemp) should generate text")
+                
+            } catch {
+                results.append((temperature: temperature, output: "", success: false))
+                let formattedTemp = String(format: "%.1f", temperature)
+                print("Temp \(formattedTemp): ❌ Error: \(error)")
+                XCTFail("Temperature \(formattedTemp) failed with error: \(error)")
+            }
+        }
+        
+        // Summary assertions
+        let successfulTests = results.filter { $0.success }
+        let failedTests = results.filter { !$0.success }
+        
+        print("\n=== Summary ===")
+        print("Successful temperatures: \(successfulTests.count)/\(results.count)")
+        print("Failed temperatures: \(failedTests.count)")
+        
+        if !failedTests.isEmpty {
+            let failedTemps = failedTests.map { String(format: "%.1f", $0.temperature) }
+            print("Failed at temperatures: \(failedTemps.joined(separator: ", "))")
+        }
+        
+        // Assert that most temperatures work (allowing for some edge case failures)
+        let successRate = Double(successfulTests.count) / Double(results.count)
+        XCTAssertGreaterThan(successRate, 0.9, "At least 90% of temperature values should work")
     }
     
     func testTopKSamplingConstraints() async throws {
