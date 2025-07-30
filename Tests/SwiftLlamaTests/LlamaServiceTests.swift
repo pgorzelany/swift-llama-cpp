@@ -100,6 +100,35 @@ final class LlamaServiceTests: XCTestCase {
         XCTAssertTrue(jsonObject.count > 0, "JSON object should have at least one property")
     }
     
+    func testJSONArrayGenerationWithGrammar() async throws {
+        // Given
+        let messages = createJSONArrayMessages()
+        let samplingConfig = try createJSONArraySamplingConfig()
+        
+        // When
+        let generatedText = try await generateJSONWithGrammar(
+            messages: messages,
+            samplingConfig: samplingConfig,
+            maxTokens: TestConfig.jsonTestMaxTokens
+        )
+        
+        // Then
+        XCTAssertFalse(generatedText.isEmpty, "Should generate some text")
+        
+        let jsonArray = try validateJSONArray(generatedText)
+        
+        // Log results
+        print("=== JSON Array Generation Test Results ===")
+        print("Generated JSON Array: \(generatedText)")
+        print("Array contains \(jsonArray.count) elements")
+        if !jsonArray.isEmpty {
+            print("First element type: \(type(of: jsonArray[0]))")
+        }
+        
+        // Verify structure
+        XCTAssertTrue(jsonArray.count >= 0, "JSON array should be valid (can be empty)")
+    }
+    
     // MARK: - Sampling Configuration Tests
     
     func testSeedReproducibility() async throws {
@@ -402,6 +431,34 @@ extension LlamaServiceTests {
         ]
     }
     
+    private func createJSONArrayMessages() -> [LlamaChatMessage] {
+        [
+            LlamaChatMessage(role: .system, content: "You are a helpful assistant that responds only in valid JSON array format."),
+            LlamaChatMessage(role: .user, content: "Generate a JSON array containing 3 different fruits as strings.")
+        ]
+    }
+    
+    private func loadJSONArrayGrammar() throws -> String {
+        guard let grammarURL = Bundle.module.url(forResource: "Resources/json_array", withExtension: "gbnf") else {
+            throw TestError.resourceNotFound("json_array.gbnf")
+        }
+        return try String(contentsOf: grammarURL)
+    }
+    
+    private func createJSONArraySamplingConfig() throws -> LlamaSamplingConfig {
+        let grammarString = try loadJSONArrayGrammar()
+        let grammarConfig = LlamaGrammarConfig(
+            grammar: grammarString,
+            grammarRoot: "root"
+        )
+        
+        return LlamaSamplingConfig(
+            temperature: 0.1, // Low temperature for deterministic output
+            seed: TestConfig.testSeed,
+            grammarConfig: grammarConfig
+        )
+    }
+    
     private func measureTokenGenerationPerformance(
         messages: [LlamaChatMessage],
         samplingConfig: LlamaSamplingConfig,
@@ -468,10 +525,25 @@ extension LlamaServiceTests {
     }
     
     private func isCompleteJSON(_ text: String) -> Bool {
-        guard text.contains("}") else { return false }
-        let openBraces = text.filter { $0 == "{" }.count
-        let closeBraces = text.filter { $0 == "}" }.count
-        return openBraces == closeBraces && openBraces > 0
+        // Check for complete JSON object
+        if text.contains("}") {
+            let openBraces = text.filter { $0 == "{" }.count
+            let closeBraces = text.filter { $0 == "}" }.count
+            if openBraces == closeBraces && openBraces > 0 {
+                return true
+            }
+        }
+        
+        // Check for complete JSON array
+        if text.contains("]") {
+            let openBrackets = text.filter { $0 == "[" }.count
+            let closeBrackets = text.filter { $0 == "]" }.count
+            if openBrackets == closeBrackets && openBrackets > 0 {
+                return true
+            }
+        }
+        
+        return false
     }
     
     private func validateJSON(_ jsonString: String) throws -> [String: Any] {
@@ -486,6 +558,20 @@ extension LlamaServiceTests {
         }
         
         return dictionary
+    }
+    
+    private func validateJSONArray(_ jsonString: String) throws -> [Any] {
+        guard let jsonData = jsonString.data(using: .utf8) else {
+            throw TestError.invalidJSON("Could not convert to data")
+        }
+        
+        let jsonObject = try JSONSerialization.jsonObject(with: jsonData, options: [])
+        
+        guard let array = jsonObject as? [Any] else {
+            throw TestError.invalidJSON("JSON is not an array")
+        }
+        
+        return array
     }
 }
 
