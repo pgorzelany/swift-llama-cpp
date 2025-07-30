@@ -151,7 +151,6 @@ final actor Llama {
 
     func generateNextToken() throws -> NextToken {
         let newTokenId = sampler.sample(context: context, lastTokenIndex: batch.size - 1)
-        sampler.accept(token: newTokenId)
 
         if model.isEogToken(newTokenId) || currentTokenPosition > maxTokenCount {
             return .endOfString

@@ -34,7 +34,7 @@ let package = Package(
         .testTarget(
             name: "SwiftLlamaTests",
             dependencies: ["SwiftLlama"],
-            resources: [.copy("Models")]
+            resources: [.copy("Resources")]
         ),
     ]
 )
