@@ -14,7 +14,7 @@ public final actor LlamaService {
     private var currentTask: Task<(), Error>?
     private let modelUrl: URL
     private let config: LlamaConfig
-    private let tokenBufferSize = 2
+    private let tokenBufferSize = 1
 
     // MARK: Lifecycle
 
