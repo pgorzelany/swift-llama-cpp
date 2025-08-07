@@ -1,6 +1,20 @@
 # swift-llama-cpp
 
-Run any LLM locally on iOS or MacOS. Powered by [llama.cpp](https://github.com/ggml-org/llama.cpp) 
+Run any LLM locally on iOS or MacOS. Powered by [llama.cpp](https://github.com/ggml-org/llama.cpp)
+
+## Coverage
+
+This wrapper covers:
+- Model loading (single file and splits), save, metadata, size, params, encoder/decoder flags
+- Vocab API (token text, score, attrs, special tokens), tokenize/detokenize
+- Context creation/free, threads, embeddings/attention/warmup toggles
+- Memory API (sequence remove/copy/keep/add/div/min/max/canShift)
+- Encode/decode, logits/embeddings getters, synchronize
+- State/session save-load, per-sequence state
+- Chat templates (apply and list built-ins)
+- Sampler chain (grammar, top-k, top-p, temp, penalties, dist), sample/accept/reset/clone
+- LoRA adapter load/apply/remove/clear, control vectors
+- Backend init/free, capability queries, system info, logging hook
 
 ## Basic usage
 
@@ -21,7 +35,7 @@ guard let modelUrl = Bundle.main.url(forResource: "your-model-name", withExtensi
 
 // 2. Initialize the LlamaService
 // This service manages the model and context.
-let llamaService = LlamaService(modelUrl: modelUrl, config: .init())
+let llamaService = LlamaService(modelUrl: modelUrl, config: .init(batchSize: 256, maxTokenCount: 4096, useGPU: true))
 
 // 3. Prepare your messages
 // The conversation history can be provided as an array of messages.
@@ -33,7 +47,7 @@ let messages = [
 // 4. Generate text
 // The `streamCompletion` method returns an `AsyncThrowingStream` of tokens.
 do {
-    let stream = try await llamaService.streamCompletion(of: messages)
+    let stream = try await llamaService.streamCompletion(of: messages, samplingConfig: .init(temperature: 0.8, seed: 42))
     var generatedText = ""
     for try await token in stream {
         generatedText += token

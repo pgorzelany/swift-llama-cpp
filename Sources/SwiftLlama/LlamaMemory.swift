@@ -13,7 +13,7 @@ public final class LlamaMemory {
 
     // MARK: - Public Methods
 
-    /// Clears the memory contents.
+    /// Clear the memory contents (metadata and optionally data).
     ///
     /// If `data` is `true`, the data buffers will also be cleared along with the metadata.
     /// - Parameter data: A boolean indicating whether to clear the data buffers as well.
@@ -21,7 +21,7 @@ public final class LlamaMemory {
         llama_memory_clear(memory, data)
     }
 
-    /// Removes all tokens that belong to the specified sequence and have positions in the range `[p0, p1)`.
+    /// Remove all tokens that belong to the specified sequence and have positions in the range [p0, p1).
     ///
     /// - Parameters:
     ///   - sequenceId: The sequence ID. If less than 0, it matches any sequence.
@@ -33,7 +33,7 @@ public final class LlamaMemory {
         llama_memory_seq_rm(memory, sequenceId, p0, p1)
     }
 
-    /// Copies all tokens that belong to a source sequence to a destination sequence within a specified position range.
+    /// Copy all tokens that belong to a source sequence to a destination sequence within a specified position range.
     ///
     /// - Parameters:
     ///   - sourceSequenceId: The ID of the source sequence.
@@ -49,14 +49,14 @@ public final class LlamaMemory {
         llama_memory_seq_cp(memory, sourceSequenceId, destinationSequenceId, p0, p1)
     }
 
-    /// Removes all tokens that do not belong to the specified sequence.
+    /// Remove all tokens that do not belong to the specified sequence.
     ///
     /// - Parameter sequenceId: The ID of the sequence to keep.
     public func keep(sequenceId: LlamaSequenceId) {
         llama_memory_seq_keep(memory, sequenceId)
     }
 
-    /// Adds a relative position "delta" to all tokens that belong to the specified sequence and have positions in the range `[p0, p1)`.
+    /// Add relative position delta to all tokens in a sequence within [p0, p1).
     ///
     /// - Parameters:
     ///   - sequenceId: The sequence ID.
@@ -72,7 +72,7 @@ public final class LlamaMemory {
         llama_memory_seq_add(memory, sequenceId, p0, p1, delta)
     }
 
-    /// Performs integer division on the positions of tokens in a specified sequence by a factor `d > 1`.
+    /// Integer-divide the positions by factor d > 1 for a sequence in [p0, p1).
     ///
     /// - Parameters:
     ///   - sequenceId: The sequence ID.
@@ -109,7 +109,7 @@ public final class LlamaMemory {
         llama_memory_seq_pos_max(memory, sequenceId)
     }
 
-    /// A boolean value indicating whether the memory supports shifting.
+    /// Whether this memory supports shifting.
     public var canShift: Bool {
         llama_memory_can_shift(memory)
     }

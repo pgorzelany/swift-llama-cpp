@@ -68,6 +68,13 @@ final actor Llama {
         llama_backend_free()
     }
 
+    // Expose some backend/system utilities for convenience
+    /// Return system info string from the backend.
+    static func printSystemInfo() -> String {
+        guard let c = llama_print_system_info() else { return "" }
+        return String(cString: c)
+    }
+
     func initializeCompletion(messages: [LlamaChatMessage], addAssistant: Bool? = nil) throws {
         let formattedPrompt = model.applyChatTemplate(to: messages, addAssistant: addAssistant)
         try initializeCompletion(text: formattedPrompt)

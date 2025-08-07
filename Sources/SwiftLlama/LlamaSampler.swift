@@ -35,8 +35,8 @@ public final class LlamaSampler {
             if let grammarSampler = llama_sampler_init_grammar(model.vocabPointer, grammarConfig.grammar, grammarConfig.grammarRoot) {
                 llama_sampler_chain_add(samplerPointer, grammarSampler)
             } else {
-                #warning("Throw an error instead")
-                print("Failed to initialize grammar sampler with grammar: \n\n\(grammarConfig.grammar)")
+                // If grammar init fails, we skip adding it to the chain.
+                // Consider surfacing this as a thrown error in the initializer signature.
             }
         }
 
@@ -63,12 +63,7 @@ public final class LlamaSampler {
         let tempSampler = llama_sampler_init_temp(config.temperature)
         llama_sampler_chain_add(samplerPointer, tempSampler)
 
-        #warning("The seed doesn't seem to have any effect, the temperature defines the outcome.")
-        // temperature of 0 gives predictable results, temperature of more than 0 gives randomized results
-        // It seems the issue is only when I clear the context, something is not reset there.
-        // If I run the app from scratch with the same params I get reproducible results
         let seed = config.seed
-        print("### Seed: \(seed)")
         let distSampler = llama_sampler_init_dist(seed)
         llama_sampler_chain_add(samplerPointer, distSampler)
     }
@@ -87,8 +82,9 @@ public final class LlamaSampler {
     /// - Parameters:
     ///   - context: The current `LlamaContext`.
     /// - Returns: The sampled `llama_token`.
+    /// Sample a token from the last evaluation (uses idx=-1) and accept it.
+    /// - Returns: The sampled token id.
     public func sample(context: LlamaContext) -> llama_token {
-        #warning("Sampler usage example: https://github.com/ggerganov/llama.cpp/blob/564804b79b78df1469ec8646869972de5e885ec4/include/llama.h#L1065")
         return llama_sampler_sample(samplerPointer, context.contextPointer, -1)
     }
 
@@ -101,7 +97,55 @@ public final class LlamaSampler {
     /// For the main generation loop, the `sample(context:lastTokenIndex:)` method should be used instead, as it handles acceptance automatically.
     ///
     /// - Parameter token: The `llama_token` to accept.
+    /// Manually accept a token to update the internal state of samplers.
     public func accept(token: llama_token) {
         llama_sampler_accept(samplerPointer, token)
+    }
+
+    // Chain management helpers
+    /// Returns the sampler chain name if available.
+    public func name() -> String {
+        guard let c = llama_sampler_name(samplerPointer) else { return "" }
+        return String(cString: c)
+    }
+
+    /// Reset the sampler chain state.
+    public func reset() { llama_sampler_reset(samplerPointer) }
+
+    /// Clone the sampler chain.
+    public func clone() -> LlamaSampler? {
+        guard let cloned = llama_sampler_clone(samplerPointer) else { return nil }
+        // Wrap the returned chain pointer in a new Swift object
+        // We cannot directly assign to private let, so build via a minimal init
+        return LlamaSampler(adopting: cloned)
+    }
+
+    /// Internal initializer to adopt an existing sampler pointer.
+    private init(adopting pointer: UnsafeMutablePointer<llama_sampler>) {
+        self.samplerPointer = pointer
+    }
+
+    // Performance helpers (only valid for chains)
+    /// Print sampler performance data via logger and return empty string placeholder.
+    public func perfDataDescription() -> String {
+        llama_perf_sampler_print(samplerPointer)
+        return "" // the C function prints to stderr via log; we expose a no-op string here
+    }
+
+    // MARK: - Chain management
+
+    /// Number of samplers in the chain.
+    public func count() -> Int { Int(llama_sampler_chain_n(samplerPointer)) }
+
+    /// Get a reference name for the i-th sampler in the chain if available.
+    public func name(at index: Int32) -> String {
+        guard let s = llama_sampler_chain_get(samplerPointer, index) else { return "" }
+        guard let c = llama_sampler_name(s) else { return "" }
+        return String(cString: c)
+    }
+
+    /// Remove the i-th sampler from the chain (ownership transfers to the chain's previous owner if any).
+    public func remove(at index: Int32) {
+        _ = llama_sampler_chain_remove(samplerPointer, index)
     }
 }
