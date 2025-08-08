@@ -33,8 +33,8 @@ func tokenGenerationSpeed() async throws {
 
     #expect(tokensGenerated > 0)
     #expect(!generatedText.isEmpty)
-    // relaxed baseline to avoid false negatives in CI; adjust upward when performance improves
-    #expect(tps > 5.0)
+    let isCI = ProcessInfo.processInfo.environment["CI"] != nil
+    #expect(tps > (isCI ? 5.0 : 20.0))
 }
 
 @Test("Tokenize and detokenize roundtrip")

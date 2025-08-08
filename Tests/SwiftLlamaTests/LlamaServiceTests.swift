@@ -19,11 +19,15 @@ struct LlamaServiceTests {
         static let batchSize: UInt32 = 1024
         static let performanceTargetTokens = 500
         static let jsonTestMaxTokens = 100
-        static let minimumTokensPerSecond: Double = 5.0
+        // CI-aware performance baselines: higher locally, conservative in CI
+        private static var isCI: Bool { ProcessInfo.processInfo.environment["CI"] != nil }
+        static var minimumTokensPerSecond: Double { isCI ? 5.0 : 12.0 }
         static let testSeed: UInt32 = 42
         static let shortTestTokens = 50
         static let grammarPerformanceTokens = 20
-        static let grammarMinimumTokensPerSecond: Double = 0.2
+        static var grammarMinimumTokensPerSecond: Double { isCI ? 0.5 : 3.0 }
+        static let deterministicTokens = 100
+        static let deterministicMinCharacters = 200
     }
     
     // MARK: - Properties
@@ -55,7 +59,7 @@ struct LlamaServiceTests {
         // Then
         #expect(result.tokenCount == TestConfig.performanceTargetTokens)
         // relaxed baseline to be CI-friendly; intent is regression tracking, not strict perf
-        #expect(result.tokensPerSecond > 5.0)
+        #expect(result.tokensPerSecond > TestConfig.minimumTokensPerSecond)
         
         // Log performance metrics
         logger.info("=== Performance Test Results ===")
@@ -179,6 +183,48 @@ struct LlamaServiceTests {
         logger.info("Output 1: \(result1, privacy: .public)")
         logger.info("Output 2: \(result2, privacy: .public)")
     }
+
+    @Test("Deterministic run produces at least 200 characters")
+    func testDeterministicMinimumCharacterCount() async throws {
+        // Given: use the longer story prompt and fixed seed
+        let messages = createStoryMessages()
+        let samplingConfig = LlamaSamplingConfig(temperature: 0.1, seed: TestConfig.testSeed)
+
+        // When
+        let result = try await generateLimitedText(
+            messages: messages,
+            samplingConfig: samplingConfig,
+            maxTokens: TestConfig.deterministicTokens
+        )
+
+        // Then
+        #expect(result.count >= TestConfig.deterministicMinCharacters)
+        logger.info("Deterministic length: \(result.count, privacy: .public) chars")
+    }
+
+    @Test("Short story matches deterministic baseline")
+    func testShortStoryMatchesBaseline() async throws {
+        // Given: fixed prompt and seed/temperature for determinism
+        let baseline = "Whiskers, a sleek and agile feline, spent her Martian days lounging in the low-gravity sunbeams that streamed through the transparent dome of her habitat module. At night, she'd prowl the dusty terrain outside, chasing after the occasional Martian dust bunny as she explored the barren landscape of Olympus Mons, the largest volcano on the Red Planet."
+        let messages = [
+            LlamaChatMessage(role: .system, content: "You are a helpful assistant."),
+            LlamaChatMessage(role: .user, content: "Write a concise two-sentence story about a cat living on Mars. Be specific.")
+        ]
+        let cfg = LlamaSamplingConfig(temperature: 0.1, seed: TestConfig.testSeed)
+
+        // When
+        let generated = try await generateLimitedText(messages: messages, samplingConfig: cfg, maxTokens: 160)
+
+        // Then: compare after light whitespace normalization to avoid incidental spacing differences
+        func normalize(_ s: String) -> String {
+            let trimmed = s.trimmingCharacters(in: .whitespacesAndNewlines)
+            let squashed = trimmed.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            return squashed
+        }
+        #expect(normalize(generated) == normalize(baseline))
+    }
+
+    // NOTE: The baseline above was captured by a temporary print-only test and then inlined.
     
     @Test("Temperature impacts output")
     func testTemperatureEffectsOnOutput() async throws {
