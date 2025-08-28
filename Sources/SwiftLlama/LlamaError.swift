@@ -9,4 +9,5 @@ public enum LlamaError: Error{
     case couldNotInitializeContext
     case contextSizeLimitExeeded
     case decodingError
+    case emptyMessageArray
 }

@@ -25,6 +25,8 @@ This document outlines the conventions and best practices for developing the Swi
 
 - **Type Safety**: Hide pointer arithmetic and unsafe type conversions within the wrapper class. The public API should expose safe, native Swift types like `String`, `[llama_token]`, etc.
 
+- **No pointers in public API**: Do not expose `OpaquePointer`, `UnsafePointer<T>`, or `UnsafeMutablePointer<T>` in any public API surface. Keep all pointers internal/private to wrapper classes and functions. Expose only safe Swift types or wrapper instances.
+
 - **Immutability**: Where possible, prefer `let` over `var`. Expose properties as read-only if they should not be modified by the consumer of the API.
 
 ## 3. Code Style
@@ -45,7 +47,7 @@ void llama_model_free(struct llama_model * model);
 **Swift Wrapper:**
 ```swift
 final class LlamaModel {
-    let modelPointer: OpaquePointer
+    private let modelPointer: OpaquePointer
 
     init?(path: String, ...) {
         guard let modelPointer = llama_model_load_from_file(path, ...) else {
@@ -82,7 +84,7 @@ enum LlamaContextError: Error {
 }
 
 final class LlamaContext {
-    let contextPointer: OpaquePointer
+    private let contextPointer: OpaquePointer
     // ... other properties and init
 
     func decode(batch: LlamaBatch) throws {

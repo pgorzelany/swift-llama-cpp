@@ -1,0 +1,25 @@
+{
+  "configurations" : [
+    {
+      "id" : "E6009D1F-4279-4A43-8BB9-5DCACDA09133",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : false,
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "SwiftLlamaTests",
+        "name" : "SwiftLlamaTests"
+      }
+    }
+  ],
+  "version" : 1
+}

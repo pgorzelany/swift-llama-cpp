@@ -1,0 +1,19 @@
+# Grammar restricted to an array of JSON strings
+
+root   ::= strings
+
+strings ::= "[" ws (
+               string
+         ("," ws string)*
+             )? "]" ws
+
+string ::=
+  "\"" (
+    [^"\\\x7F\x00-\x1F] |
+    "\\" (["\\bfnrt] | "u" [0-9a-fA-F]{4}) # escapes
+  )* "\"" ws
+
+# Optional space: by convention, after literal chars when allowed
+ws ::= | " " | "\n" [ \t]{0,20}
+
+

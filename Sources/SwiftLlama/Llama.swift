@@ -8,7 +8,7 @@ enum NextToken {
 
 final actor Llama {
     private let model: LlamaModel
-    private let context: LlamaContext
+    let context: LlamaContext
     private var batch: LlamaBatch
     private var sampler: LlamaSampler!
 
@@ -67,6 +67,33 @@ final actor Llama {
     deinit {
         llama_backend_free()
     }
+
+    // Expose some backend/system utilities for convenience
+    /// Return system info string from the backend.
+    static func printSystemInfo() -> String {
+        guard let c = llama_print_system_info() else { return "" }
+        return String(cString: c)
+    }
+
+    /// Expose the underlying context to trusted callers (tests / advanced users).
+    /// Access is actor-isolated; callers must `await`.
+    func contextHandle() -> LlamaContext { context }
+
+    // MARK: - Testing & Introspection helpers (actor-safe)
+
+    func getLastLogits() -> [Float]? { context.lastLogits() }
+    func getEmbeddings() -> [Float]? { context.embeddings(at: -1) }
+    func enableEmbeddingsOutput(_ enabled: Bool) { context.setEmbeddingsOutput(enabled) }
+    func saveStateData() -> Data { context.saveState() }
+    func loadStateData(_ data: Data) -> Bool { context.loadState(data) }
+    func setThreads(nThreads: Int32, nThreadsBatch: Int32) { context.setThreads(nThreads: nThreads, nThreadsBatch: nThreadsBatch) }
+    func getThreads() -> (Int32, Int32) { (context.nThreads(), context.nThreadsBatch()) }
+    func kvMinPosition() -> Int32 { context.memory.minPosition(for: 0) }
+    func kvMaxPosition() -> Int32 { context.memory.maxPosition(for: 0) }
+    func clearKV() { context.clearKVCache() }
+
+    /// Return the full processed token id sequence (prompt + generated).
+    func getProcessedTokenIds() -> [llama_token] { processedTokens }
 
     func initializeCompletion(messages: [LlamaChatMessage], addAssistant: Bool? = nil) throws {
         let formattedPrompt = model.applyChatTemplate(to: messages, addAssistant: addAssistant)
@@ -144,9 +171,13 @@ final actor Llama {
     }
 
     func generateNextToken() throws -> NextToken {
-        let newTokenId = sampler.sample(context: context, lastTokenIndex: batch.size - 1)
+        // Stop before sampling if we've reached the context limit to avoid mutating sampler state
+        if currentTokenPosition >= Int32(maxTokenCount) {
+            return .endOfString
+        }
+        let newTokenId = sampler.sample(context: context)
 
-        if model.isEogToken(newTokenId) || currentTokenPosition > maxTokenCount {
+        if model.isEogToken(newTokenId) || currentTokenPosition >= Int32(maxTokenCount) {
             return .endOfString
         }
 
@@ -198,5 +229,6 @@ final actor Llama {
         try processBatch()
 
         currentTokenPosition = Int32(processedTokens.count)
+
     }
 }
