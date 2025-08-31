@@ -87,6 +87,20 @@ public final actor LlamaService {
         return try decoder.decode(T.self, from: finalData)
     }
 
+    /// Generate a plain text response using the provided sampling configuration.
+    /// - Parameters:
+    ///   - messages: Chat messages forming the prompt.
+    ///   - samplingConfig: Sampling parameters controlling generation.
+    /// - Returns: The full generated text.
+    public func respond(to messages: [LlamaChatMessage], samplingConfig: LlamaSamplingConfig) async throws -> String {
+        let stream = try await streamCompletion(of: messages, samplingConfig: samplingConfig)
+        var output = ""
+        for try await token in stream {
+            output += token
+        }
+        return output
+    }
+
     public func streamCompletion<T: Codable>(of messages: [LlamaChatMessage], generating: T.Type) async throws -> AsyncThrowingStream<String, Error> {
         // Default: constrain the output to valid JSON matching the provided type
         let grammarConfig = try LlamaTypedJSONGrammarBuilder.makeGrammarConfig(for: generating)

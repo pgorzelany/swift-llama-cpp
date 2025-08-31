@@ -348,6 +348,50 @@ struct LlamaServiceTests {
         #expect(fruits.count >= 3)
     }
     
+    // MARK: - respond(messages:samplingConfig:) Tests
+    
+    @Test("Plain respond() returns non-empty text")
+    func testRespondTextNonEmpty() async throws {
+        // Given: small token budget to keep the test bounded
+        let service = LlamaService(
+            modelUrl: .llama1B,
+            config: .init(batchSize: 256, maxTokenCount: 80, useGPU: false)
+        )
+        let messages = [
+            LlamaChatMessage(role: .system, content: "You are a helpful assistant."),
+            LlamaChatMessage(role: .user, content: "Write a single short sentence (max 20 words).")
+        ]
+        let cfg = LlamaSamplingConfig(temperature: 0.3, seed: TestConfig.testSeed)
+
+        // When
+        let text = try await service.respond(to: messages, samplingConfig: cfg)
+
+        // Then
+        #expect(!text.isEmpty)
+    }
+
+    @Test("Plain respond() is deterministic with same seed")
+    func testRespondDeterminismWithSameSeed() async throws {
+        // Given: two fresh services and identical config for determinism
+        let cfg = LlamaSamplingConfig(temperature: 0.1, seed: TestConfig.testSeed)
+        let serviceA = LlamaService(
+            modelUrl: .llama1B,
+            config: .init(batchSize: 256, maxTokenCount: 80, useGPU: false)
+        )
+        let serviceB = LlamaService(
+            modelUrl: .llama1B,
+            config: .init(batchSize: 256, maxTokenCount: 80, useGPU: false)
+        )
+        let messages = createSimpleMessages()
+
+        // When
+        let out1 = try await serviceA.respond(to: messages, samplingConfig: cfg)
+        let out2 = try await serviceB.respond(to: messages, samplingConfig: cfg)
+
+        // Then
+        #expect(out1 == out2)
+    }
+    
     @Test("Repetition penalty produces output")
     func testRepetitionPenaltyConfiguration() async throws {
         // Given
