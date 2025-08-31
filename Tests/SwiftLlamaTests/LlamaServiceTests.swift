@@ -391,6 +391,84 @@ struct LlamaServiceTests {
         // Then
         #expect(out1 == out2)
     }
+
+    // MARK: - json_array_strings.gbnf grammar with respond()
+
+    @Test("JSONStringArray grammar via respond() decodes to [String]")
+    func testJSONStringArrayRespondParsesToArray() async throws {
+        // Given
+        let samplingConfig = try createJSONStringArraySamplingConfig()
+        let service = LlamaService(
+            modelUrl: .llama1B,
+            config: .init(batchSize: 256, maxTokenCount: 120, useGPU: false)
+        )
+        let messages = [
+            LlamaChatMessage(role: .system, content: "You are a helpful assistant that responds only in a JSON array of strings."),
+            LlamaChatMessage(role: .user, content: "Generate a JSON array of 4 animals as strings.")
+        ]
+
+        // When
+        let generatedText = try await service.respond(to: messages, samplingConfig: samplingConfig)
+
+        // Then
+        let array = try validateStringArray(generatedText)
+        #expect(array.count == 4)
+    }
+
+    @Test("JSONStringArray grammar via respond() is deterministic with same seed")
+    func testJSONStringArrayRespondDeterminism() async throws {
+        // Given
+        let samplingConfig = try createJSONStringArraySamplingConfig()
+        let serviceA = LlamaService(
+            modelUrl: .llama1B,
+            config: .init(batchSize: 256, maxTokenCount: 120, useGPU: false)
+        )
+        let serviceB = LlamaService(
+            modelUrl: .llama1B,
+            config: .init(batchSize: 256, maxTokenCount: 120, useGPU: false)
+        )
+        let messages = [
+            LlamaChatMessage(role: .system, content: "You are a helpful assistant that responds only in a JSON array of strings."),
+            LlamaChatMessage(role: .user, content: "Generate a JSON array of 3 programming languages as strings.")
+        ]
+
+        // When
+        let out1 = try await serviceA.respond(to: messages, samplingConfig: samplingConfig)
+        let out2 = try await serviceB.respond(to: messages, samplingConfig: samplingConfig)
+
+        // Then
+        #expect(out1 == out2)
+        let arr1 = try validateStringArray(out1)
+        let arr2 = try validateStringArray(out2)
+        #expect(arr1 == arr2)
+    }
+
+    @Test("JSONStringArray grammar remains valid at high temperature via respond()")
+    func testJSONStringArrayHighTemperatureValidity() async throws {
+        // Given: high temperature but constrained by grammar should still yield valid JSON array of strings
+        let grammarString = try loadJSONStringArrayGrammar()
+        let grammarConfig = LlamaGrammarConfig(grammar: grammarString, grammarRoot: "root")
+        let samplingConfig = LlamaSamplingConfig(
+            temperature: 1.8,
+            seed: TestConfig.testSeed,
+            grammarConfig: grammarConfig
+        )
+        let service = LlamaService(
+            modelUrl: .llama1B,
+            config: .init(batchSize: 256, maxTokenCount: 120, useGPU: false)
+        )
+        let messages = [
+            LlamaChatMessage(role: .system, content: "You are a helpful assistant that responds only in a JSON array of strings."),
+            LlamaChatMessage(role: .user, content: "Generate a short JSON array of lowercase fruit names as strings.")
+        ]
+
+        // When
+        let generatedText = try await service.respond(to: messages, samplingConfig: samplingConfig)
+
+        // Then: ensure it's a valid JSON array of strings (size may vary)
+        let array = try validateStringArray(generatedText)
+        #expect(!array.isEmpty)
+    }
     
     @Test("Repetition penalty produces output")
     func testRepetitionPenaltyConfiguration() async throws {
