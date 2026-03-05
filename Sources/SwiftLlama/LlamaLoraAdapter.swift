@@ -29,7 +29,4 @@ public final class LlamaLoraAdapter {
         self.adapterPointer = adapterPointer
     }
 
-    deinit {
-        llama_adapter_lora_free(adapterPointer)
-    }
-} 
+}
