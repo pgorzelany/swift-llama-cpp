@@ -14,7 +14,6 @@ public final actor LlamaService {
     private var currentTask: Task<(), Error>?
     private let modelUrl: URL
     private let config: LlamaConfig
-    private let tokenBufferSize = 1
 
     // MARK: Lifecycle
 
@@ -122,25 +121,13 @@ public final actor LlamaService {
         return AsyncThrowingStream { continuation in
             currentTask = Task {
                 do {
-                    var tokenBuffer: [String] = []
                     generationLoop: while await (llama.currentTokenPosition < llama.maxTokenCount) {
-                        guard !Task.isCancelled else {
-                            if !tokenBuffer.isEmpty {
-                                continuation.yield(tokenBuffer.joined())
-                                tokenBuffer = []
-                            }
-                            break
-                        }
+                        guard !Task.isCancelled else { break }
                         let result = try await llama.generateNextToken()
                         switch result {
                         case .token(let token):
-                            tokenBuffer.append(token)
-                            if tokenBuffer.count == tokenBufferSize {
-                                continuation.yield(tokenBuffer.joined())
-                                tokenBuffer = []
-                            }
+                            continuation.yield(token)
                         case .endOfString:
-                            continuation.yield(tokenBuffer.joined())
                             break generationLoop
                         }
                     }
