@@ -2,6 +2,8 @@
 
 Run any LLM locally on iOS or MacOS. Powered by [llama.cpp](https://github.com/ggml-org/llama.cpp)
 
+To browse upstream C/C++ source at the same revision as the pinned xcframework, see [Reference/README.md](Reference/README.md).
+
 ## Coverage
 
 This wrapper covers:
