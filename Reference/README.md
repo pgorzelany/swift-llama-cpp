@@ -4,7 +4,7 @@ This folder holds a **local checkout of [llama.cpp](https://github.com/ggml-org/
 
 ## Pin
 
-Keep the checkout aligned with `llamaVersion` in `Package.swift` (currently the release tag, e.g. `b8429`).
+Keep the checkout aligned with `llamaVersion` in `Package.swift` (currently the release tag, e.g. `b8638`).
 
 ## (Re)fetch
 
