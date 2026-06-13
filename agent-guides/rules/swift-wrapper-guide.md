@@ -1,8 +1,3 @@
----
-description: 
-globs: 
-alwaysApply: true
----
 # Swift Wrapper for C API Development Rules
 
 This document outlines the conventions and best practices for developing the Swift wrapper around the llama.cpp C API. The goal of this project is to create a safe, ergonomic, and idiomatic Swift interface that hides the complexities of the underlying C implementation.
