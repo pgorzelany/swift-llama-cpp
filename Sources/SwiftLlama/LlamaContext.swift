@@ -8,12 +8,53 @@
 import Foundation
 import llama
 
-public enum LlamaContextError: Error {
+public enum LlamaContextError: LocalizedError {
     case decodingError
+    case decodeFailed(code: Int32, diagnostics: String?)
+    case encodeFailed(code: Int32, diagnostics: String?)
     case logitsUnavailable
     case saveStateFailed
     case loadStateFailed
     case loraAdapterFailed(String)
+
+    public var errorDescription: String? {
+        switch self {
+        case .decodingError:
+            return "llama.cpp could not decode the model input."
+        case .decodeFailed(let code, let diagnostics):
+            return Self.failureDescription(operation: "decode", code: code, diagnostics: diagnostics)
+        case .encodeFailed(let code, let diagnostics):
+            return Self.failureDescription(operation: "encode", code: code, diagnostics: diagnostics)
+        case .logitsUnavailable:
+            return "llama.cpp did not provide output logits."
+        case .saveStateFailed:
+            return "llama.cpp could not save the model state."
+        case .loadStateFailed:
+            return "llama.cpp could not restore the model state."
+        case .loraAdapterFailed(let message):
+            return message
+        }
+    }
+
+    private static func failureDescription(operation: String, code: Int32, diagnostics: String?) -> String {
+        let reason: String
+        switch code {
+        case 1:
+            reason = "No KV-cache slot was available. Reduce the batch size or increase the context window."
+        case 2:
+            reason = "The operation was aborted."
+        case -1:
+            reason = "llama.cpp received an invalid input batch."
+        case ..<(-1):
+            reason = "llama.cpp reported a fatal backend error."
+        default:
+            reason = "llama.cpp returned an unexpected status."
+        }
+
+        let summary = "Model \(operation) failed (llama.cpp status \(code)). \(reason)"
+        guard let diagnostics, !diagnostics.isEmpty else { return summary }
+        return "\(summary)\n\(diagnostics)"
+    }
 }
 
 public final class LlamaContext {
@@ -80,17 +121,27 @@ public final class LlamaContext {
     }
 
     public func decode(batch: LlamaBatch) throws {
+        let diagnosticMarker = LlamaLog.marker()
         let returnCode = llama_decode(contextPointer, batch.rawBatch)
-        guard returnCode >= 0 else {
-            throw LlamaContextError.decodingError
+        guard returnCode == 0 else {
+            throw LlamaContextError.decodeFailed(
+                code: returnCode,
+                diagnostics: LlamaLog.diagnostics(since: diagnosticMarker)
+            )
         }
         synchronize()
     }
 
     /// Run encoder-only pass for encoder-decoder models or preprocess inputs.
     public func encode(batch: LlamaBatch) throws {
+        let diagnosticMarker = LlamaLog.marker()
         let rc = llama_encode(contextPointer, batch.rawBatch)
-        guard rc >= 0 else { throw LlamaContextError.decodingError }
+        guard rc == 0 else {
+            throw LlamaContextError.encodeFailed(
+                code: rc,
+                diagnostics: LlamaLog.diagnostics(since: diagnosticMarker)
+            )
+        }
         synchronize()
     }
 

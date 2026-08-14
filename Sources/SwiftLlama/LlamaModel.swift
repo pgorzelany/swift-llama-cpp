@@ -160,6 +160,7 @@ public final class LlamaModel {
     /// Apply chat template using the default model template (or custom by name).
     public func applyChatTemplate(to messages: [LlamaChatMessage], addAssistant: Bool? = nil) -> String {
         let cTemplatePointer = llama_model_chat_template(modelPointer, nil)
+        let shouldAddAssistant = addAssistant ?? (messages.last?.role != .assistant)
 
         // Convert Swift messages to C messages
         var cMessages = messages.map { message -> llama_chat_message in
@@ -170,7 +171,7 @@ public final class LlamaModel {
 
         // Initial buffer size
         let bufferSizeMultiplier = 3
-        var bufferSize = bufferSizeMultiplier * messages.reduce(0) { $0 + $1.content.count }
+        var bufferSize = max(1, bufferSizeMultiplier * messages.reduce(0) { $0 + $1.content.count })
         var buffer = [CChar](repeating: 0, count: bufferSize)
 
         var resultSize: Int32 = 0
@@ -185,7 +186,7 @@ public final class LlamaModel {
                cTemplatePointer,
                &cMessages,
                messages.count,
-               addAssistant ?? (messages.last?.role != .assistant),
+               shouldAddAssistant,
                &buffer,
                Int32(bufferSize)
            )
@@ -197,8 +198,28 @@ public final class LlamaModel {
            free(UnsafeMutablePointer(mutating: message.content))
         }
 
-        // Convert the C string buffer to a Swift string
-        return Self.stringFromNullTerminated(buffer)
+        let prompt = Self.stringFromNullTerminated(buffer)
+        if prompt.isEmpty, metaValue(forKey: "general.architecture") == "gemma4" {
+            return applyGemma4ChatTemplate(to: messages, addAssistant: shouldAddAssistant)
+        }
+        return prompt
+    }
+
+    private func applyGemma4ChatTemplate(
+        to messages: [LlamaChatMessage],
+        addAssistant: Bool
+    ) -> String {
+        var prompt = string(from: bosToken())
+        prompt += messages.map { message in
+            let role = message.role == .assistant ? "model" : message.role.rawValue
+            let content = message.content.trimmingCharacters(in: .whitespacesAndNewlines)
+            return "<|turn>\(role)\n\(content)<turn|>\n"
+        }.joined()
+
+        if addAssistant {
+            prompt += "<|turn>model\n"
+        }
+        return prompt
     }
 
     /// Apply chat template by template name found in the model.

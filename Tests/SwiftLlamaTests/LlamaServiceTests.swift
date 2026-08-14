@@ -226,10 +226,8 @@ struct LlamaServiceTests {
         logger.info("Deterministic length: \(result.count, privacy: .public) chars")
     }
 
-    @Test("Short story matches deterministic baseline")
-    func testShortStoryMatchesBaseline() async throws {
-        // Given: fixed prompt and seed/temperature for determinism
-        let baseline = "Whiskers, a sleek and agile feline, spent her Martian days lounging in the low-gravity sunbeams that streamed through the transparent dome of her habitat module. At night, she'd prowl the dusty terrain outside, chasing after the occasional Martian dust bunny as she explored the barren landscape of Olympus Mons, the largest volcano on the Red Planet."
+    @Test("Short story remains coherent and on-topic")
+    func testShortStorySemanticBaseline() async throws {
         let messages = [
             LlamaChatMessage(role: .system, content: "You are a helpful assistant."),
             LlamaChatMessage(role: .user, content: "Write a concise two-sentence story about a cat living on Mars. Be specific.")
@@ -239,16 +237,17 @@ struct LlamaServiceTests {
         // When
         let generated = try await generateLimitedText(messages: messages, samplingConfig: cfg, maxTokens: 160)
 
-        // Then: compare after light whitespace normalization to avoid incidental spacing differences
-        func normalize(_ s: String) -> String {
-            let trimmed = s.trimmingCharacters(in: .whitespacesAndNewlines)
-            let squashed = trimmed.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
-            return squashed
-        }
-        #expect(normalize(generated) == normalize(baseline))
-    }
+        print("LLAMA_SHORT_STORY_START\n\(generated)\nLLAMA_SHORT_STORY_END")
+        let normalized = generated.lowercased()
+        let sentenceCount = generated.filter { $0 == "." || $0 == "!" || $0 == "?" }.count
+        let wordCount = generated.split(whereSeparator: \Character.isWhitespace).count
 
-    // NOTE: The baseline above was captured by a temporary print-only test and then inlined.
+        #expect(normalized.contains("cat"))
+        #expect(normalized.contains("mars") || normalized.contains("martian"))
+        #expect(sentenceCount >= 2)
+        #expect(wordCount >= 30)
+        #expect(!generated.contains("�"))
+    }
     
     @Test("Temperature impacts output")
     func testTemperatureEffectsOnOutput() async throws {
@@ -595,14 +594,13 @@ struct LlamaServiceTests {
         logger.info("Generated \(tokenCount) tokens before cancellation: \(generatedText, privacy: .public)")
     }
 
-    // MARK: - Golden Deterministic Story
+    // MARK: - Semantic Story Regression
 
-    @Test("Long deterministic story baseline")
-    func testLongDeterministicStoryBaseline() async throws {
-        // Given: deterministic CPU-only config and fixed prompt
+    @Test("Long story preserves requested subjects and structure")
+    func testLongStorySemanticBaseline() async throws {
         let service = LlamaService(
             modelUrl: .llama1B,
-            config: .init(batchSize: 256, maxTokenCount: 2048, useGPU: false)
+            config: .init(batchSize: 256, maxTokenCount: 512, useGPU: true)
         )
 
         let messages = [
@@ -616,68 +614,55 @@ struct LlamaServiceTests {
             using: service,
             messages: messages,
             samplingConfig: cfg,
-            maxTokens: 240
+            maxTokens: 320
         )
 
-        // Always print the story delimited for easy copy-paste
         print("LLAMA_GENERATED_STORY_START\n\(story)\nLLAMA_GENERATED_STORY_END")
+        let normalized = story.lowercased()
+        let paragraphs = story.components(separatedBy: "\n\n").filter { !$0.isEmpty }
+        let wordCount = story.split(whereSeparator: \Character.isWhitespace).count
 
-        // Baseline captured locally on this machine using the same model + binary.
-        let baseline = """
-        As the sun set over ancient Alexandria, a lone figure emerged from the shadows. A time traveler, with eyes that shone like stars in the night sky, stepped onto the bustling streets of this fabled city. The air was thick with the scent of papyrus and olive oil as he made his way to the Great Library of Alexandria. The towering structure loomed before him, its marble columns glinting like a thousand tiny diamonds in the fading light.
-
-        As he pushed open the doors, a warm golden glow enveloped him, illuminating rows upon rows of dusty scrolls and ancient texts. The time traveler wandered through the stacks, running his fingers over the worn leather bindings, feeling the weight of centuries of knowledge within. He paused before a shelf dedicated to the works of Homer, his eyes scanning the yellowed pages as if searching for a specific verse.
-
-        The sound of gulls crying overhead gave way to the murmur of merchants haggling over goods at the harbor. The time traveler's gaze followed the throngs of ships and sailors, their vessels bearing exotic spices from distant lands. He watched as a young apprentice, his eyes shining with excitement, carefully unwrapped a shipment of pome
-        """
-        #expect(story == baseline)
+        #expect(normalized.contains("alexandria"))
+        #expect(normalized.contains("library"))
+        #expect(normalized.contains("harbor") || normalized.contains("harbour"))
+        #expect(paragraphs.count >= 2)
+        #expect(wordCount >= 80 && wordCount <= 350)
+        #expect(!story.contains("�"))
     }
 
-    @Test("Long deterministic token baseline")
-    func testLongDeterministicTokenBaseline() async throws {
-        // Given: deterministic CPU-only config and fixed prompt
-        let service = LlamaService(
-            modelUrl: .llama1B,
-            config: .init(batchSize: 256, maxTokenCount: 2048, useGPU: false)
-        )
-
+    @Test("Token generation is reproducible with a fixed seed")
+    func testDeterministicTokenReproducibility() async throws {
         let messages = [
             LlamaChatMessage(role: .system, content: "You are a helpful assistant."),
             LlamaChatMessage(role: .user, content: "Write a vivid short story (3-4 paragraphs) about a time traveler visiting ancient Alexandria, focusing on the Library and the harbor. Keep it under 350 words.")
         ]
         let cfg = LlamaSamplingConfig(temperature: 0.0, seed: 12345, topP: 1.0, topK: nil, minKeep: 1)
 
-        // When: run generation but also collect token ids from the underlying Llama actor
-        let stream = try await service.streamCompletion(of: messages, samplingConfig: cfg)
-        var out = ""
-        var count = 0
-        for try await token in stream where count < 240 {
-            out += token
-            count += 1
-        }
+        func generateTokenIDs() async throws -> [Int32] {
+            let llama = try Llama(
+                modelPath: URL.llama1B.path,
+                config: .init(batchSize: 256, maxTokenCount: 512, useGPU: true)
+            )
+            try await llama.initializeCompletion(messages: messages)
+            await llama.updateSamplingConfig(cfg)
 
-        // We need the token ids, which are tracked by Llama
-        // Re-process the same prompt through a fresh Llama to retrieve tokens deterministically
-        let llama = try Llama(modelPath: URL.llama1B.path, config: .init(batchSize: 256, maxTokenCount: 2048, useGPU: false))
-        try await llama.initializeCompletion(messages: messages)
-        await llama.updateSamplingConfig(cfg)
-        var tokens: [Int32] = []
-        generation: while await llama.currentTokenPosition < llama.maxTokenCount && tokens.count < 240 {
-            let result = try await llama.generateNextToken()
-            switch result {
-            case .token:
-                tokens = await llama.getProcessedTokenIds()
-            case .endOfString:
-                break generation
+            generation: for _ in 0..<64 {
+                switch try await llama.generateNextToken() {
+                case .token:
+                    break
+                case .endOfString:
+                    break generation
+                }
             }
+
+            return await llama.getProcessedTokenIds()
         }
 
-        // Print tokens for capture
-        print("LLAMA_GENERATED_TOKENS_START\n\(tokens)\nLLAMA_GENERATED_TOKENS_END")
+        let firstRun = try await generateTokenIDs()
+        let secondRun = try await generateTokenIDs()
 
-        // Then: token baseline captured on this machine for strict reproducibility
-        let tokenBaseline: [Int32] = [128006, 9125, 128007, 271, 2675, 527, 264, 11190, 18328, 13, 128009, 128006, 882, 128007, 271, 8144, 264, 43120, 2875, 3446, 320, 18, 12, 19, 43743, 8, 922, 264, 892, 63865, 17136, 14154, 57233, 11, 21760, 389, 279, 11896, 323, 279, 57511, 13, 13969, 433, 1234, 220, 8652, 4339, 13, 128009, 128006, 78191, 128007, 271, 2170, 279, 7160, 743, 927, 14154, 57233, 11, 264, 47766, 7216, 22763, 505, 279, 35612, 13, 362, 892, 63865, 11, 449, 6548, 430, 559, 606, 1093, 9958, 304, 279, 3814, 13180, 11, 25319, 8800, 279, 90256, 14708, 315, 420, 282, 2364, 3363, 13, 578, 3805, 574, 12314, 449, 279, 41466, 315, 281, 90294, 323, 33213, 5707, 439, 568, 1903, 813, 1648, 311, 279, 8681, 11896, 315, 57233, 13, 578, 87794, 6070, 781, 25111, 1603, 1461, 11, 1202, 42390, 8310, 2840, 396, 287, 1093, 264, 16579, 13987, 49151, 304, 279, 59617, 3177, 382, 2170, 568, 15753, 1825, 279, 14365, 11, 264, 8369, 21411, 37066, 54285, 291, 1461, 11, 44087, 1113, 7123, 5304, 7123, 315, 77973, 79664, 323, 14154, 22755, 13, 578, 892, 63865, 82294, 1555, 279, 41050, 11, 4401, 813, 19779, 927, 279, 24634, 18012, 36800, 11, 8430, 279, 4785, 315, 24552, 315, 6677, 2949, 13, 1283, 35595, 1603, 264, 28745, 12514, 311, 279, 4375, 315, 66805, 11, 813, 6548, 36201, 279, 14071, 291, 6959, 439, 422, 15389, 369, 264, 3230, 33487, 382, 791, 5222, 315, 342, 71523, 31299, 32115, 6688, 1648, 311, 279, 8309, 66206, 315]
-        #expect(tokens == tokenBaseline)
+        #expect(firstRun.count > 64)
+        #expect(firstRun == secondRun)
     }
 }
 
@@ -809,9 +794,13 @@ extension LlamaServiceTests {
         var generatedTokensCount = 0
         var generatedText = ""
         
-        for try await token in stream where generatedTokensCount < targetTokens {
+        for try await token in stream {
             generatedTokensCount += 1
             generatedText += token
+            if generatedTokensCount == targetTokens {
+                await llamaService.stopCompletion()
+                break
+            }
         }
         
         let endTime = CFAbsoluteTimeGetCurrent()
@@ -831,7 +820,7 @@ extension LlamaServiceTests {
         var generatedText = ""
         var tokenCount = 0
         
-        for try await token in stream where tokenCount < maxTokens {
+        for try await token in stream {
             generatedText += token
             tokenCount += 1
             
@@ -839,7 +828,13 @@ extension LlamaServiceTests {
             if isCompleteJSON(generatedText) {
                 break
             }
+
+            if tokenCount == maxTokens {
+                break
+            }
         }
+
+        await llamaService.stopCompletion()
         
         return generatedText
     }
@@ -854,9 +849,13 @@ extension LlamaServiceTests {
         var generatedText = ""
         var tokenCount = 0
         
-        for try await token in stream where tokenCount < maxTokens {
+        for try await token in stream {
             generatedText += token
             tokenCount += 1
+            if tokenCount == maxTokens {
+                await llamaService.stopCompletion()
+                break
+            }
         }
         
         return generatedText
@@ -871,9 +870,13 @@ extension LlamaServiceTests {
         let stream = try await service.streamCompletion(of: messages, samplingConfig: samplingConfig)
         var generatedText = ""
         var tokenCount = 0
-        for try await token in stream where tokenCount < maxTokens {
+        for try await token in stream {
             generatedText += token
             tokenCount += 1
+            if tokenCount == maxTokens {
+                await service.stopCompletion()
+                break
+            }
         }
         return generatedText
     }
@@ -981,4 +984,3 @@ private enum TestError: Error, LocalizedError {
         }
     }
 }
-

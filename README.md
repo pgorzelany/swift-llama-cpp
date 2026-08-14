@@ -4,6 +4,21 @@ Run any LLM locally on iOS or MacOS. Powered by [llama.cpp](https://github.com/g
 
 To browse upstream C/C++ source at the same revision as the pinned xcframework, see [Reference/README.md](Reference/README.md).
 
+## Running model-backed tests
+
+The test suite runs natively on macOS and uses an ignored 808 MB Llama 3.2 GGUF fixture:
+
+```bash
+./Scripts/download-test-model.sh
+swift test --no-parallel
+```
+
+The download script verifies the fixture's SHA-256 before installing it. To run the optional Gemma 4 compatibility test against a local GGUF file:
+
+```bash
+GEMMA4_GGUF_PATH=/absolute/path/to/gemma-4.gguf swift test --filter GemmaCompatibilityTests
+```
+
 ## Coverage
 
 This wrapper covers:

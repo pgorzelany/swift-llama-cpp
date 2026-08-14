@@ -22,6 +22,7 @@ final actor Llama {
 
     init(modelPath: String, config: LlamaConfig) throws {
         self.config = config
+        LlamaLog.installDiagnosticCapture()
         llama_backend_init()
         var model_params = llama_model_default_params()
 
@@ -34,10 +35,13 @@ final actor Llama {
                 print("Running on simulator, force use n_gpu_layers = 0")
         #endif
 
+        let modelDiagnosticMarker = LlamaLog.marker()
         let model = LlamaModel(path: modelPath, parameters: model_params)
         guard let model else {
             print("Could not load model at \(modelPath)")
-            throw LlamaError.couldNotInitializeContext
+            throw LlamaError.modelInitializationFailed(
+                diagnostics: LlamaLog.diagnostics(since: modelDiagnosticMarker)
+            )
         }
 
         let n_threads = ProcessInfo.processInfo.processorCount - 1
@@ -51,10 +55,13 @@ final actor Llama {
         contextParam.n_ubatch = config.batchSize
         contextParam.offload_kqv = true
 
+        let contextDiagnosticMarker = LlamaLog.marker()
         let context = LlamaContext(model: model, parameters: contextParam)
         guard let context else {
             print("Could not load context!")
-            throw LlamaError.couldNotInitializeContext
+            throw LlamaError.contextInitializationFailed(
+                diagnostics: LlamaLog.diagnostics(since: contextDiagnosticMarker)
+            )
         }
 
 
@@ -97,6 +104,9 @@ final actor Llama {
 
     func initializeCompletion(messages: [LlamaChatMessage], addAssistant: Bool? = nil) throws {
         let formattedPrompt = model.applyChatTemplate(to: messages, addAssistant: addAssistant)
+        guard !formattedPrompt.isEmpty else {
+            throw LlamaError.chatTemplateError
+        }
         try initializeCompletion(text: formattedPrompt)
     }
 
@@ -202,12 +212,7 @@ final actor Llama {
     }
 
     private func processBatch() throws {
-        do {
-            try context.decode(batch: batch)
-        } catch {
-            print("llama_decode() failed")
-            throw LlamaError.decodingError
-        }
+        try context.decode(batch: batch)
     }
 
     private func processPrompt(tokens: [llama_token], startIndex: Int) throws {
