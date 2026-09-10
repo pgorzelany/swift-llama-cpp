@@ -1,7 +1,7 @@
 import Foundation
 import llama
 
-enum NextToken {
+enum NextToken: Sendable {
     case token(String)
     case endOfString
 }
@@ -129,6 +129,8 @@ final actor Llama {
                 print("### Using partial optimization from position \(divergenceIndex)")
                 do {
                     try optimizedReprocessing(newTokenList: tokenList, divergenceIndex: divergenceIndex)
+                } catch is CancellationError {
+                    throw CancellationError()
                 } catch {
                     print("Partial optimization failed, falling back to full reprocessing")
                     clear()
@@ -205,6 +207,11 @@ final actor Llama {
         self.sampler = .init(config: config, model: model)
     }
 
+    func resetCompletion() {
+        clear()
+        currentTokenPosition = 0
+    }
+
     private func clear() {
         context.clearKVCache()
         processedTokens = []
@@ -220,6 +227,7 @@ final actor Llama {
         batch.reset()
 
         for i in 0..<tokens.count {
+            if i % Int(config.batchSize) == 0 { try Task.checkCancellation() }
             let tokenPosition = startIndex + i
             let tokenId = tokens[i]
             batch.addToken(tokenId, at: Int32(tokenPosition), logits: false)

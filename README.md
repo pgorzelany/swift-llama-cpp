@@ -33,7 +33,52 @@ This wrapper covers:
 - LoRA adapter load/apply/remove/clear, control vectors
 - Backend init/free, capability queries, system info, logging hook
 
-## Basic usage
+## Apple sessions (iOS 27 / macOS 27)
+
+The existing `SwiftLlama` product also exposes `LlamaLanguageModel` and `LlamaLanguageModelExecutor`. These APIs require Swift 6.4 and iOS/macOS 27; older compilers and deployment targets retain the existing `LlamaService` API without a package-wide deployment bump.
+
+```swift
+import Foundation
+import FoundationModels
+import SwiftLlama
+
+@available(iOS 27.0, macOS 27.0, *)
+func answer(using modelURL: URL) async throws -> String {
+    let model = LlamaLanguageModel(
+        modelURL: modelURL,
+        configuration: .init(batchSize: 256, maxTokenCount: 4096)
+    )
+    let session = LanguageModelSession(model: model, instructions: "Be helpful.")
+    do {
+        try await model.prewarm(transcript: session.transcript)
+        let response = try await session.respond(to: "What is the capital of France?")
+        await model.unload()
+        return response.content
+    } catch {
+        await model.unload()
+        throw error
+    }
+}
+```
+
+The executor drives the internal `Llama` actor directly: no `LlamaService` or intermediate completion stream. Create a separate model instance for each conversation owner; copies share the same execution resources. Concurrent generations on one model are rejected. For Stop, cancel the consuming task and await `model.cancelAndWait()` before reusing the model. `unload()` also awaits warmup/inference before releasing weights and context. Cancellation is checked between decoded tokens and prompt batches; it cannot interrupt a synchronous C decode already in progress.
+
+Text generation supports temperature, seed, greedy/top-k/top-p sampling, output limits, prompt-cache reuse, tagged thinking and exact raw replay. Apple transcript reasoning entries expose the tagged thinking separately from answer text. `LlamaLanguageModel.Metadata` contains raw output, measured token totals and timing. The reasoning-token split and cached-token count are not measured; native usage uses zero for those required fields, and metadata marks reasoning counts as unknown. Do not present those zeros as measured counts.
+
+Vision, tool calling, guided generation and reasoning-effort controls are not advertised; requesting them fails explicitly. This does not remove the legacy service's grammar APIs.
+
+The `LlamaLanguageModelTests` suite exercises real Apple sessions, lifecycle/cancellation, reasoning/replay, sampling, token limits and synthetic overhead, plus the ignored GGUF fixture. Run it on an iOS 27 simulator or macOS 27 host; a newer SDK alone cannot run these APIs on macOS 26. Run simulator suites sequentially, not concurrently against the same simulator.
+
+```bash
+DEVELOPER_DIR=/Applications/Xcode-27.0.0-Beta.5.app/Contents/Developer \
+  xcodebuild -scheme swift-llama-cpp \
+  -destination 'platform=iOS Simulator,OS=27.0,name=iPhone 17 Pro' \
+  -derivedDataPath /tmp/SwiftLlamaSessionTests \
+  -only-testing:SwiftLlamaTests/LlamaLanguageModelTests \
+  -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO test
+```
+
+## Legacy service usage
 
 Here is a quick example of how to use `SwiftLlama` to generate text from a model.
 
