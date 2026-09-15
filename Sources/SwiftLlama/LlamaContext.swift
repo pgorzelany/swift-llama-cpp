@@ -114,9 +114,9 @@ public final class LlamaContext {
         memory.clear(data: true)
     }
 
-    public func clearKVCacheFromPosition(_ position: Int32) {
-        // Remove KV cache entries from the given position to the end
-        // seq_id = -1 means all sequences, p0 = position, p1 = -1 means to the end
+    /// Removes the cached suffix of sequence zero; returns false when the model cannot trim it.
+    @discardableResult
+    public func clearKVCacheFromPosition(_ position: Int32) -> Bool {
         memory.remove(sequenceId: 0, from: position, to: -1)
     }
 

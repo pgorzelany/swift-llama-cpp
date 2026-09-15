@@ -170,16 +170,19 @@ final actor Llama {
     
     /// Optimized reprocessing that only clears cache from the divergence point
     private func optimizedReprocessing(newTokenList: [llama_token], divergenceIndex: Int) throws {
-        // Clear KV cache from the divergence point onward
-        context.clearKVCacheFromPosition(Int32(divergenceIndex))
-        
-        // Update our internal state
-        processedTokens = Array(processedTokens[0..<divergenceIndex])
-        currentTokenPosition = Int32(divergenceIndex)
-        
-        // Process only the tokens from the divergence point onward
-        let tokensToProcess = Array(newTokenList[divergenceIndex...])
-        try processPrompt(tokens: tokensToProcess, startIndex: divergenceIndex)
+        // A shorter, fully matching prompt still needs its final token decoded to refresh logits.
+        let resumeIndex = min(divergenceIndex, newTokenList.count - 1)
+        guard context.clearKVCacheFromPosition(Int32(resumeIndex)) else {
+            // Recurrent/hybrid memory may reject suffix removal; do not advance Swift's cache state.
+            print("Partial cache trimming unavailable, falling back to full reprocessing")
+            clear()
+            try processPrompt(tokens: newTokenList, startIndex: 0)
+            return
+        }
+
+        processedTokens = Array(processedTokens.prefix(resumeIndex))
+        currentTokenPosition = Int32(resumeIndex)
+        try processPrompt(tokens: Array(newTokenList[resumeIndex...]), startIndex: resumeIndex)
     }
 
     func generateNextToken() throws -> NextToken {
@@ -215,6 +218,7 @@ final actor Llama {
     private func clear() {
         context.clearKVCache()
         processedTokens = []
+        currentTokenPosition = 0
         batch = .init(initialSize: Int32(config.batchSize))
     }
 
@@ -232,7 +236,8 @@ final actor Llama {
             let tokenId = tokens[i]
             batch.addToken(tokenId, at: Int32(tokenPosition), logits: false)
             processedTokens.append(tokenId)
-            if batch.size == config.batchSize {
+            // Keep the final batch, even when full, so it requests logits and is not decoded empty.
+            if batch.size == config.batchSize && i + 1 < tokens.count {
                 try processBatch()
                 batch.reset()
             }
