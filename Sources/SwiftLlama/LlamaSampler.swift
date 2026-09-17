@@ -51,6 +51,7 @@ public final class LlamaSampler {
 
         if let penaltyConfig = config.repetitionPenaltyConfig, penaltyConfig.lastN > 0 {
             let penaltiesSampler = llama_sampler_init_penalties(
+                model.vocabularySize(),
                 penaltyConfig.lastN,
                 penaltyConfig.repeatPenalty,
                 penaltyConfig.freqPenalty,

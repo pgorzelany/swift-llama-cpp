@@ -34,7 +34,10 @@ struct LlamaLanguageModelTests {
     }
 
     @available(iOS 27.0, macOS 27.0, *)
-    @Test("Stop during reasoning or an answer cancels the engine and permits reuse", arguments: ["<think>Plan", "<think>Plan</think>Partial"])
+    @Test("Stop during reasoning or an answer cancels the engine and permits reuse", arguments: [
+        "<think>Plan", "<think>Plan</think>Partial",
+        "<|channel>thought\nPlan", "<|channel>thought\nPlan<channel|>Partial"
+    ])
     @MainActor
     func cancellation(raw: String) async throws {
         let blocked = ExecutorTestGate()
@@ -184,9 +187,12 @@ struct LlamaLanguageModelTests {
     }
 
     @available(iOS 27.0, macOS 27.0, *)
-    @Test("Tagged reasoning works at every delimiter split")
-    func parserSplits() {
-        let raw = "<think>First</think>Hello <think>Second</think>world"
+    @Test("Tagged reasoning works at every delimiter split", arguments: [
+        "<think>First</think>Hello <think>Second</think>world",
+        "<|channel>thought\nFirst<channel|>Hello <|channel>thought\nSecond<channel|>world",
+        "<|channel>thought\nFirst<channel|>Hello <think>Second</think>world"
+    ])
+    func parserSplits(raw: String) {
         for count in 0...raw.count {
             var parser = LlamaReasoningParser()
             _ = parser.append(String(raw.prefix(count)))
@@ -196,6 +202,25 @@ struct LlamaLanguageModelTests {
             #expect(parser.answer == "Hello world")
             #expect(parser.reasoning == ["First", "Second"])
         }
+    }
+
+    @available(iOS 27.0, macOS 27.0, *)
+    @Test("Gemma thought channels stay out of answers and replay without changing tokens", arguments: ["", "Plan"])
+    func gemmaReasoning(thought: String) async throws {
+        let raw = "<|channel>thought\n\(thought)<channel|>The capital of France is Paris."
+        let engine = ExecutorTestEngine(scripts: [raw.map(String.init)])
+        let model = LlamaLanguageModel(engineFactory: { engine })
+        let session = LanguageModelSession(model: model)
+        let response = try await session.respond(to: "What is the capital of France?")
+        #expect(response.content == "The capital of France is Paris.")
+        let reasoning = session.transcript.compactMap { entry -> String? in
+            guard case .reasoning(let value) = entry else { return nil }
+            return value.segments.compactMap { if case .text(let text) = $0 { text.content } else { nil } }.joined()
+        }
+        #expect(reasoning == [thought])
+        #expect(try LlamaTranscriptMapper.messages(session.transcript).last?.content == raw)
+        #expect(session.usage.output.totalTokenCount == raw.count)
+        await model.unload()
     }
 
     @available(iOS 27.0, macOS 27.0, *)

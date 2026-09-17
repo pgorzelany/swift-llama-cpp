@@ -99,6 +99,7 @@ struct LlamaReasoningParser: Sendable {
     private(set) var answer = ""
     private(set) var reasoning: [String] = []
     private(set) var isReasoning = false
+    private var closingDelimiter = "</think>"
     private var pending = ""
 
     mutating func append(_ text: String) -> [Fragment] {
@@ -106,19 +107,26 @@ struct LlamaReasoningParser: Sendable {
         pending += text
         var fragments: [Fragment] = []
         while !pending.isEmpty {
-            let delimiter = isReasoning ? "</think>" : "<think>"
-            if let range = pending.range(of: delimiter) {
+            let delimiters = isReasoning ? [closingDelimiter] : ["<think>", "<|channel>thought\n"]
+            let match = delimiters.compactMap { delimiter in
+                pending.range(of: delimiter).map { (delimiter: delimiter, range: $0) }
+            }.min { $0.range.lowerBound < $1.range.lowerBound }
+            if let match {
+                let range = match.range
                 emit(String(pending[..<range.lowerBound]), into: &fragments)
                 pending = String(pending[range.upperBound...])
                 if isReasoning {
                     fragments.append(.reasoningFinished(reasoning.count - 1))
                 } else {
+                    closingDelimiter = match.delimiter == "<think>" ? "</think>" : "<channel|>"
                     reasoning.append("")
                     fragments.append(.reasoningStarted(reasoning.count - 1))
                 }
                 isReasoning.toggle()
             } else {
-                let held = (1..<delimiter.count).reversed().first { pending.hasSuffix(delimiter.prefix($0)) } ?? 0
+                let held = delimiters.map { delimiter in
+                    (1..<delimiter.count).reversed().first { pending.hasSuffix(delimiter.prefix($0)) } ?? 0
+                }.max() ?? 0
                 emit(String(pending.dropLast(held)), into: &fragments)
                 pending = String(pending.suffix(held))
                 break

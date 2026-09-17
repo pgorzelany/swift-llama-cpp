@@ -2,6 +2,20 @@
 
 Run any LLM locally on iOS or MacOS. Powered by [llama.cpp](https://github.com/ggml-org/llama.cpp)
 
+The package pins llama.cpp v0.4.1 through the `b10964` Apple XCFramework, with its release SHA-256 verified by SwiftPM.
+
+## iOS simulator setup
+
+Upstream [stopped including simulator slices in release binaries](https://github.com/ggml-org/llama.cpp/pull/27252). Before building for an iOS simulator, install CMake and run this once with Xcode selected:
+
+```bash
+bash Scripts/prepare-apple-framework.sh
+```
+
+The script verifies the official release archive and the pinned source commit, builds the arm64/x86_64 simulator slice, and combines it with the unchanged official macOS/iOS device binaries and debug symbols. SwiftPM automatically uses the resulting ignored `Artifacts/llama-b10964.xcframework`. Run the script before opening Xcode or resolving packages. If the project has already resolved the remote binary, use Xcode's **File → Packages → Reset Package Caches**, then resolve again so its cached manifest picks up the local artifact. Repeat preparation after changing the runtime pin. A checkout without this local artifact uses the official binary and supports macOS and iOS devices only.
+
+After a runtime upgrade, clean SwiftPM and Xcode build products to avoid stale C API layouts. When updating the pin, update `llamaVersion`, `llamaChecksum`, and `llamaRevision` together in `Package.swift`.
+
 To browse upstream C/C++ source at the same revision as the pinned xcframework, see [Reference/README.md](Reference/README.md).
 
 ## Running model-backed tests
@@ -63,7 +77,7 @@ func answer(using modelURL: URL) async throws -> String {
 
 The executor drives the internal `Llama` actor directly: no `LlamaService` or intermediate completion stream. Create a separate model instance for each conversation owner; copies share the same execution resources. Concurrent generations on one model are rejected. For Stop, cancel the consuming task and await `model.cancelAndWait()` before reusing the model. `unload()` also awaits warmup/inference before releasing weights and context. Cancellation is checked between decoded tokens and prompt batches; it cannot interrupt a synchronous C decode already in progress.
 
-Text generation supports temperature, seed, greedy/top-k/top-p sampling, output limits, prompt-cache reuse, tagged thinking and exact raw replay. Apple transcript reasoning entries expose the tagged thinking separately from answer text. `LlamaLanguageModel.Metadata` contains raw output, measured token totals and timing. The reasoning-token split and cached-token count are not measured; native usage uses zero for those required fields, and metadata marks reasoning counts as unknown. Do not present those zeros as measured counts.
+Text generation supports temperature, seed, greedy/top-k/top-p sampling, output limits, prompt-cache reuse, tagged thinking and exact raw replay. The parser separates both `<think>…</think>` blocks and Gemma 4's `<|channel>thought\n…<channel|>` blocks into Apple transcript reasoning entries, retaining exact raw output for replay. `LlamaLanguageModel.Metadata` contains raw output, measured token totals and timing. The reasoning-token split and cached-token count are not measured; native usage uses zero for those required fields, and metadata marks reasoning counts as unknown. Do not present those zeros as measured counts.
 
 Vision, tool calling, guided generation and reasoning-effort controls are not advertised; requesting them fails explicitly. This does not remove the legacy service's grammar APIs.
 

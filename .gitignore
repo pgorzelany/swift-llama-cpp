@@ -30,6 +30,7 @@ playground.xcworkspace
 # .swiftpm
 
 .build/
+Artifacts/
 
 # Optional upstream source mirror (see Reference/README.md); not part of the Swift package build.
 Reference/llama.cpp/
