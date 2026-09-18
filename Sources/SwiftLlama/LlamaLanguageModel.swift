@@ -28,6 +28,13 @@ public struct LlamaLanguageModel: LanguageModel {
         }
     }
 
+    /// Counts the exact formatted prompt with the already-loaded tokenizer without changing inference state.
+    public func contextUsage(for transcript: Transcript, addingAssistant: Bool) async throws -> LlamaContextUsage? {
+        let messages = try transcript.isEmpty ? [] : LlamaTranscriptMapper.messages(transcript)
+        guard !messages.isEmpty else { return nil }
+        return try await executorConfiguration.runtime.contextUsage(messages, addingAssistant: addingAssistant)
+    }
+
     /// Cancels and awaits inference and warmup before the model can be reused.
     public func cancelAndWait() async {
         await executorConfiguration.runtime.stop(unload: false)

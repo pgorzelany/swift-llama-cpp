@@ -80,6 +80,58 @@ struct LlamaLanguageModelTests {
     }
 
     @available(iOS 27.0, macOS 27.0, *)
+    @Test("Context counting reuses only a loaded engine and does not mutate generation")
+    func contextCountingLifecycle() async throws {
+        let engine = ExecutorTestEngine(scripts: [["Ready"]])
+        let factoryCalls = Mutex(0)
+        let model = LlamaLanguageModel(engineFactory: {
+            factoryCalls.withLock { $0 += 1 }
+            return engine
+        })
+        let transcript = promptTranscript("Hello")
+
+        #expect(try await model.contextUsage(for: transcript, addingAssistant: true) == nil)
+        #expect(factoryCalls.withLock { $0 } == 0)
+        try await model.prewarm(transcript: transcript)
+        #expect(try await model.contextUsage(for: transcript, addingAssistant: false)?.usedTokens == 5)
+        #expect(try await model.contextUsage(for: transcript, addingAssistant: true)?.usedTokens == 8)
+        #expect(await engine.generatedCount == 0)
+        #expect(await engine.resetCount == 0)
+        #expect(factoryCalls.withLock { $0 } == 1)
+
+        await model.unload()
+        #expect(try await model.contextUsage(for: transcript, addingAssistant: true) == nil)
+        #expect(factoryCalls.withLock { $0 } == 1)
+    }
+
+    @available(iOS 27.0, macOS 27.0, *)
+    @Test("Unload waits for in-flight context tokenization before releasing the engine")
+    func unloadJoinsContextCounting() async throws {
+        let blocked = ExecutorTestUncancellableGate()
+        let engine = ExecutorTestEngine(scripts: [], blockedContext: blocked)
+        let model = LlamaLanguageModel(engineFactory: { engine })
+        let transcript = promptTranscript("Hello")
+        try await model.prewarm(transcript: transcript)
+        let counting = Task { try await model.contextUsage(for: transcript, addingAssistant: true) }
+        try await engine.counting.wait()
+        let unloadFinished = Mutex(false)
+        let unloading = Task {
+            await model.unload()
+            unloadFinished.withLock { $0 = true }
+        }
+        try await Task.sleep(for: .milliseconds(30))
+        #expect(!unloadFinished.withLock { $0 })
+        await blocked.open()
+        await unloading.value
+        #expect(unloadFinished.withLock { $0 })
+        do {
+            _ = try await counting.value
+            Issue.record("Cancelled counting should not publish a value")
+        } catch {}
+        #expect(try await model.contextUsage(for: transcript, addingAssistant: true) == nil)
+    }
+
+    @available(iOS 27.0, macOS 27.0, *)
     @Test("Repeated thinking blocks replay as one lossless assistant turn")
     func repeatedReasoning() async throws {
         let raw = "<think>First</think>Hello <think>Second</think>world"
@@ -276,24 +328,43 @@ private final class ExecutorTestGate: Sendable {
     }
 }
 
+private actor ExecutorTestUncancellableGate {
+    private var continuation: CheckedContinuation<Void, Never>?
+    private var isOpen = false
+
+    func wait() async {
+        if isOpen { return }
+        await withCheckedContinuation { continuation = $0 }
+    }
+
+    func open() {
+        isOpen = true
+        continuation?.resume()
+        continuation = nil
+    }
+}
+
 @available(iOS 27.0, macOS 27.0, *)
 private actor ExecutorTestEngine: LlamaExecutorEngine {
     nonisolated let paused = ExecutorTestGate()
     nonisolated let preparing = ExecutorTestGate()
+    nonisolated let counting = ExecutorTestGate()
     private var scripts: [[String]]
     private var tokens: [String] = []
     private var index = 0
     private var blockedAfterTokens: ExecutorTestGate?
     private var blockedPreparation: ExecutorTestGate?
     private var failAfterTokens: Bool
+    private var blockedContext: ExecutorTestUncancellableGate?
     private(set) var resetCount = 0
     private(set) var generatedCount = 0
 
-    init(scripts: [[String]], blockedAfterTokens: ExecutorTestGate? = nil, blockedPreparation: ExecutorTestGate? = nil, failAfterTokens: Bool = false) {
+    init(scripts: [[String]], blockedAfterTokens: ExecutorTestGate? = nil, blockedPreparation: ExecutorTestGate? = nil, failAfterTokens: Bool = false, blockedContext: ExecutorTestUncancellableGate? = nil) {
         self.scripts = scripts
         self.blockedAfterTokens = blockedAfterTokens
         self.blockedPreparation = blockedPreparation
         self.failAfterTokens = failAfterTokens
+        self.blockedContext = blockedContext
     }
 
     func prepare(_ messages: [LlamaChatMessage], addingAssistant: Bool) async throws -> Int {
@@ -329,5 +400,14 @@ private actor ExecutorTestEngine: LlamaExecutorEngine {
     }
 
     func resetCompletion() { resetCount += 1 }
+
+    func contextUsage(_ messages: [LlamaChatMessage], addingAssistant: Bool) async -> LlamaContextUsage {
+        counting.open()
+        if let blockedContext {
+            self.blockedContext = nil
+            await blockedContext.wait()
+        }
+        return .init(usedTokens: messages.reduce(0) { $0 + $1.content.count } + (addingAssistant ? 3 : 0), effectiveCapacity: 251)
+    }
 }
 #endif

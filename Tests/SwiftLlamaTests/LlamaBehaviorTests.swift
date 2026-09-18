@@ -100,6 +100,36 @@ struct LlamaBehaviorTests {
         }
     }
 
+    @Test("Reported effective capacity matches the inference boundary without mutating state")
+    func contextUsageBoundary() async throws {
+        let llama = try Llama(
+            modelPath: URL.llama1B.path,
+            config: .init(batchSize: 64, maxTokenCount: 64, useGPU: false)
+        )
+        var byCount: [Int: [LlamaChatMessage]] = [:]
+        for wordCount in 1...160 {
+            let messages = [LlamaChatMessage(role: .user, content: String(repeating: "x ", count: wordCount))]
+            let usage = try await llama.contextUsage(messages, addingAssistant: true)
+            byCount[usage.usedTokens] = messages
+            if byCount[usage.effectiveCapacity] != nil, byCount[usage.effectiveCapacity + 1] != nil { break }
+        }
+        let accepted = try #require(byCount[59])
+        let rejected = try #require(byCount[60])
+        #expect(await llama.getProcessedTokenIds().isEmpty)
+        try await llama.initializeCompletion(messages: accepted, addAssistant: true)
+        #expect(await llama.getProcessedTokenIds().count == 59)
+        let before = await llama.getProcessedTokenIds()
+        _ = try await llama.contextUsage(accepted, addingAssistant: true)
+        #expect(await llama.getProcessedTokenIds() == before)
+        do {
+            try await llama.initializeCompletion(messages: rejected, addAssistant: true)
+            Issue.record("Expected the first prompt above effective capacity to be rejected")
+        } catch LlamaError.contextSizeLimitExeeded {
+        } catch {
+            Issue.record("Expected contextSizeLimitExeeded, got \(error)")
+        }
+    }
+
     private func generate(messages: [LlamaChatMessage], maxTokens: Int = 64) async throws -> String {
         try await collect(from: makeService(maxTokenCount: 256), messages: messages, maxTokens: maxTokens)
     }

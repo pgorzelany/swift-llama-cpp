@@ -110,6 +110,17 @@ final actor Llama {
         try initializeCompletion(text: formattedPrompt)
     }
 
+    func contextUsage(_ messages: [LlamaChatMessage], addingAssistant: Bool) throws -> LlamaContextUsage {
+        try Task.checkCancellation()
+        let formattedPrompt = model.applyChatTemplate(to: messages, addAssistant: addingAssistant)
+        guard !formattedPrompt.isEmpty else { throw LlamaError.chatTemplateError }
+        let usedTokens = model.tokenize(text: formattedPrompt, addBos: model.shouldAddBos(), special: true).count
+        return LlamaContextUsage(
+            usedTokens: usedTokens,
+            effectiveCapacity: max(0, Int(maxTokenCount) - 5)
+        )
+    }
+
     private func initializeCompletion(text: String) throws {
         print("attempting to complete \"\(text)\"")
 

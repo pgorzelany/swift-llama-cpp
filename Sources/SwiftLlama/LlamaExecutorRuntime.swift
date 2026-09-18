@@ -10,6 +10,7 @@ protocol LlamaExecutorEngine: Actor {
     func updateSamplingConfig(_ config: LlamaSamplingConfig) async
     func generateNextToken() async throws -> NextToken
     func resetCompletion() async
+    func contextUsage(_ messages: [LlamaChatMessage], addingAssistant: Bool) async throws -> LlamaContextUsage
 }
 
 @available(iOS 27.0, macOS 27.0, *)
@@ -29,6 +30,7 @@ final class LlamaExecutorRuntime: Sendable {
         var warmup: Task<Void, Error>?
         var response: Task<Void, Error>?
         var responseID: UUID?
+        var counts: [UUID: Task<LlamaContextUsage?, Error>] = [:]
         var stopping: Task<Void, Never>?
         var releaseOnStop = false
     }
@@ -50,6 +52,32 @@ final class LlamaExecutorRuntime: Sendable {
             try await task.value
             try Task.checkCancellation()
         } onCancel: { task.cancel() }
+    }
+
+    func contextUsage(_ messages: [LlamaChatMessage], addingAssistant: Bool) async throws -> LlamaContextUsage? {
+        let pending = state.withLock { state -> (UUID, Task<LlamaContextUsage?, Error>)? in
+            guard state.stopping == nil, let engine = state.engine else { return nil }
+            let id = UUID()
+            let task = Task<LlamaContextUsage?, Error> { @concurrent in
+                try Task.checkCancellation()
+                let usage = try await engine.contextUsage(messages, addingAssistant: addingAssistant)
+                try Task.checkCancellation()
+                return usage
+            }
+            state.counts[id] = task
+            return (id, task)
+        }
+        guard let (id, task) = pending else { return nil }
+        do {
+            let value = try await withTaskCancellationHandler {
+                try await task.value
+            } onCancel: { task.cancel() }
+            finishCount(id)
+            return value
+        } catch {
+            finishCount(id)
+            throw error
+        }
     }
 
     private func warmup(_ messages: [LlamaChatMessage]) -> Task<Void, Error>? {
@@ -124,15 +152,19 @@ final class LlamaExecutorRuntime: Sendable {
             if let stopping = state.stopping { return stopping }
             let response = state.response
             let warmup = state.warmup
+            let counts = Array(state.counts.values)
             let task = Task { @concurrent [self] in
                 // Never run cancellation handlers while holding the lifecycle lock.
                 response?.cancel()
                 warmup?.cancel()
+                counts.forEach { $0.cancel() }
                 _ = await response?.result
                 _ = await warmup?.result
+                for count in counts { _ = await count.result }
                 self.state.withLock { state in
                     if state.releaseOnStop { state.engine = nil }
                     state.warmup = nil
+                    state.counts = [:]
                     state.releaseOnStop = false
                     state.stopping = nil
                 }
@@ -158,6 +190,10 @@ final class LlamaExecutorRuntime: Sendable {
             state.responseID = nil
             state.warmup = nil
         }
+    }
+
+    private func finishCount(_ id: UUID) {
+        state.withLock { $0.counts[id] = nil }
     }
 
     private static func waitForWarmup(_ task: Task<Void, Error>) async {
