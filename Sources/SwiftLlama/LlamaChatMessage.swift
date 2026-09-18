@@ -12,10 +12,12 @@ public struct LlamaChatMessage: Sendable {
         case system
         case user
         case assistant
+        case tool
     }
     
     public let role: Role
     public let content: String
+    var usesLFMToolTemplate = false
 
     public init(role: LlamaChatMessage.Role, content: String) {
         self.role = role

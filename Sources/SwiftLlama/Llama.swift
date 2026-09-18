@@ -14,6 +14,7 @@ final actor Llama {
 
     // Configuration
 
+    private var renderSpecialTokens = false
     private let config: LlamaConfig
     let maxTokenCount: UInt32
     /// Tracks the current position in the token sequence during decoding.
@@ -103,6 +104,7 @@ final actor Llama {
     func getProcessedTokenIds() -> [llama_token] { processedTokens }
 
     func initializeCompletion(messages: [LlamaChatMessage], addAssistant: Bool? = nil) throws {
+        renderSpecialTokens = messages.contains(where: \.usesLFMToolTemplate)
         let formattedPrompt = model.applyChatTemplate(to: messages, addAssistant: addAssistant)
         guard !formattedPrompt.isEmpty else {
             throw LlamaError.chatTemplateError
@@ -214,7 +216,7 @@ final actor Llama {
         currentTokenPosition += 1
         try context.decode(batch: batch)
 
-        return .token(model.piece(from: newTokenId))
+        return .token(model.piece(from: newTokenId, renderSpecial: renderSpecialTokens))
     }
 
     func updateSamplingConfig(_ config: LlamaSamplingConfig) {

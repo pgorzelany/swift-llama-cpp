@@ -134,3 +134,57 @@ do {
     print("Error generating text: \(error.localizedDescription)")
 }
 ``` 
+
+## Foundation Models tool calling (iOS / macOS 27)
+
+`LlamaLanguageModel` defaults to text-only capability. Opt in to the tested
+LFM2.5-1.2B-Instruct-QAD-Q4_0 profile explicitly:
+
+```swift
+let model = LlamaLanguageModel(
+    modelURL: modelURL,
+    configuration: .init(batchSize: 512, maxTokenCount: 4096),
+    capabilityProfile: .lfm2_5InstructQ4_0
+)
+let session = LanguageModelSession(model: model, tools: [myTool])
+let answer = try await session.respond(to: "Look up my record")
+```
+
+The profile pins the shipped GGUF SHA-256 and llama.cpp b10964. Loading fails if
+its bytes do not match; filenames and embedded metadata do not grant tool
+capability. Requalify this profile when changing the model, framework revision,
+renderer, or parser. The app's downloaded models retain the default text profile.
+
+The C chat API cannot supply tool schemas. This profile implements the shipped
+LFM ChatML template's text/tool branches with `preserve_thinking=true`, renders
+Foundation Models schemas as the model's `List of tools`, and preserves raw
+assistant output in transcript metadata. It supports Pythonic keyword arguments,
+JSON containers, multiple calls in one batch, and text before/after a call. It
+validates the whole batch against enabled tool names and argument schemas before
+sending native `toolCalls` events. Apple's session executes tools and requests
+continuation; the wrapper does not run a separate agent loop. Tool failures thrown
+by `Tool.call` follow Apple's session error policy. Tools may also return error
+content for model-led recovery.
+
+Allowed (default) and disallowed tool modes are supported. Required tool choice
+is rejected explicitly; this profile does not force a call with a grammar.
+Tool calling is a model capability, not a promise that every prompt selects the
+right tool. The integration fixture uses opaque record values to prove the final
+answer came from tool execution, while deterministic tests use a calculator.
+
+Tests run entirely offline once the existing GGUF/framework fixtures are present:
+
+```sh
+swift test --filter 'LlamaToolCallingTests|LlamaLanguageModelTests'
+ENCLAVE_GGUF_TEST_MODEL=/absolute/path/LFM2.5-1.2B-Instruct-QAD-Q4_0.gguf \
+  swift test --filter LlamaToolCallingIntegrationTests
+TEST_RUNNER_ENCLAVE_GGUF_TEST_MODEL=/absolute/path/LFM2.5-1.2B-Instruct-QAD-Q4_0.gguf \
+  xcodebuild -scheme swift-llama-cpp -destination 'platform=iOS Simulator,name=iPhone 18 Pro' \
+  -only-testing:SwiftLlamaTests/LlamaToolCallingTests \
+  -only-testing:SwiftLlamaTests/LlamaToolCallingIntegrationTests \
+  -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO test
+```
+
+The real-model suite is opt-in through `ENCLAVE_GGUF_TEST_MODEL`. An explicitly
+provided missing or incorrect model fails, rather than skipping. Ordinary parser
+and native-session tests do not require the shipped LFM binary.

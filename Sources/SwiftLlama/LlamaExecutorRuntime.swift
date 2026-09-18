@@ -123,15 +123,17 @@ final class LlamaExecutorRuntime: Sendable {
                     try Task.checkCancellation()
                     await engine.updateSamplingConfig(sampling)
                     var output = LlamaResponseEmitter(requestID: request.id, inputTokens: inputTokens, start: start, channel: channel)
+                    output.parsesTools = messages.contains(where: \.usesLFMToolTemplate)
+                    output.toolDefinitions = request.generationOptions.toolCallingMode == .disallowed ? [] : request.enabledToolDefinitions
                     while request.generationOptions.maximumResponseTokens.map({ output.tokenCount < $0 }) ?? true {
                         try Task.checkCancellation()
                         let next = try await engine.generateNextToken()
                         try Task.checkCancellation()
                         guard case .token(let text) = next else { break }
-                        await output.append(text)
+                        try await output.append(text)
                     }
                     try Task.checkCancellation()
-                    await output.finish()
+                    try await output.finish()
                 } catch {
                     await engine.resetCompletion()
                     throw error

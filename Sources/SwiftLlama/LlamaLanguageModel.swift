@@ -7,20 +7,25 @@ import FoundationModels
 public struct LlamaLanguageModel: LanguageModel {
     public typealias Executor = LlamaLanguageModelExecutor
 
-    public let capabilities = LanguageModelCapabilities([])
+    public var capabilities: LanguageModelCapabilities {
+        LanguageModelCapabilities(capabilityProfile == .textOnly ? [] : [.toolCalling])
+    }
+    public let capabilityProfile: LlamaCapabilityProfile
     public let executorConfiguration: Executor.Configuration
 
-    public init(modelURL: URL, configuration: LlamaConfig) {
-        executorConfiguration = .init(modelURL: modelURL, configuration: configuration)
+    public init(modelURL: URL, configuration: LlamaConfig, capabilityProfile: LlamaCapabilityProfile = .textOnly) {
+        self.capabilityProfile = capabilityProfile
+        executorConfiguration = .init(modelURL: modelURL, configuration: configuration, capabilityProfile: capabilityProfile)
     }
 
-    init(engineFactory: @escaping @Sendable () throws -> any LlamaExecutorEngine) {
+    init(capabilityProfile: LlamaCapabilityProfile = .textOnly, engineFactory: @escaping @Sendable () throws -> any LlamaExecutorEngine) {
+        self.capabilityProfile = capabilityProfile
         executorConfiguration = .init(engineFactory: engineFactory)
     }
 
     /// Loads the model and processes history, waiting until preparation has actually finished.
     public func prewarm(transcript: Transcript) async throws {
-        let messages = try transcript.isEmpty ? [] : LlamaTranscriptMapper.messages(transcript)
+        let messages = try transcript.isEmpty ? [] : LlamaTranscriptMapper.messages(transcript, profile: capabilityProfile)
         do {
             try await executorConfiguration.runtime.prepare(messages)
         } catch LlamaError.contextSizeLimitExeeded {
@@ -30,7 +35,7 @@ public struct LlamaLanguageModel: LanguageModel {
 
     /// Counts the exact formatted prompt with the already-loaded tokenizer without changing inference state.
     public func contextUsage(for transcript: Transcript, addingAssistant: Bool) async throws -> LlamaContextUsage? {
-        let messages = try transcript.isEmpty ? [] : LlamaTranscriptMapper.messages(transcript)
+        let messages = try transcript.isEmpty ? [] : LlamaTranscriptMapper.messages(transcript, profile: capabilityProfile)
         guard !messages.isEmpty else { return nil }
         return try await executorConfiguration.runtime.contextUsage(messages, addingAssistant: addingAssistant)
     }
@@ -71,7 +76,7 @@ public struct LlamaLanguageModelExecutor: LanguageModelExecutor {
         let runtime: LlamaExecutorRuntime
         let contextWindowTokens: Int
 
-        public init(modelURL: URL, configuration: LlamaConfig) {
+        public init(modelURL: URL, configuration: LlamaConfig, capabilityProfile: LlamaCapabilityProfile = .textOnly) {
             contextWindowTokens = Int(configuration.maxTokenCount)
             runtime = LlamaExecutorRuntime {
                 guard configuration.batchSize > 0,
@@ -80,6 +85,7 @@ public struct LlamaLanguageModelExecutor: LanguageModelExecutor {
                       configuration.maxTokenCount <= UInt32(Int32.max) else {
                     throw LlamaExecutorError.invalidConfiguration
                 }
+                try capabilityProfile.validate(modelURL: modelURL)
                 return try Llama(modelPath: modelURL.path(percentEncoded: false), config: configuration)
             }
         }
@@ -107,7 +113,7 @@ public struct LlamaLanguageModelExecutor: LanguageModelExecutor {
     }
 
     public func prewarm(model: Model, transcript: Transcript) {
-        guard let messages = try? (transcript.isEmpty ? [] : LlamaTranscriptMapper.messages(transcript)) else { return }
+        guard let messages = try? (transcript.isEmpty ? [] : LlamaTranscriptMapper.messages(transcript, profile: model.capabilityProfile)) else { return }
         runtime.scheduleWarmup(messages)
     }
 
@@ -116,8 +122,9 @@ public struct LlamaLanguageModelExecutor: LanguageModelExecutor {
         model: Model,
         streamingInto channel: LanguageModelExecutorGenerationChannel
     ) async throws {
-        let messages = try LlamaTranscriptMapper.messages(request.transcript)
-        let sampling = try LlamaTranscriptMapper.sampling(request)
+        let enabledTools = request.generationOptions.toolCallingMode == .disallowed ? [] : request.enabledToolDefinitions
+        let messages = try LlamaTranscriptMapper.messages(request.transcript, profile: model.capabilityProfile, tools: enabledTools)
+        let sampling = try LlamaTranscriptMapper.sampling(request, profile: model.capabilityProfile)
         do {
             try await runtime.respond(request: request, messages: messages, sampling: sampling, channel: channel)
         } catch LlamaError.contextSizeLimitExeeded {

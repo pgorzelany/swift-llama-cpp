@@ -159,6 +159,11 @@ public final class LlamaModel {
 
     /// Apply chat template using the default model template (or custom by name).
     public func applyChatTemplate(to messages: [LlamaChatMessage], addAssistant: Bool? = nil) -> String {
+        if messages.contains(where: \.usesLFMToolTemplate) {
+            // The verified LFM template uses ChatML with preserve_thinking=true. The C API
+            // cannot render its tools parameter, so the mapper supplies the exact tool preamble.
+            return Self.renderLFMToolPrompt(messages, bos: string(from: bosToken()), addAssistant: addAssistant ?? (messages.last?.role != .assistant))
+        }
         let cTemplatePointer = llama_model_chat_template(modelPointer, nil)
         let shouldAddAssistant = addAssistant ?? (messages.last?.role != .assistant)
 
@@ -202,6 +207,14 @@ public final class LlamaModel {
         if prompt.isEmpty, metaValue(forKey: "general.architecture") == "gemma4" {
             return applyGemma4ChatTemplate(to: messages, addAssistant: shouldAddAssistant)
         }
+        return prompt
+    }
+
+    static func renderLFMToolPrompt(_ messages: [LlamaChatMessage], bos: String, addAssistant: Bool) -> String {
+        let turns = messages.first?.role == .system && messages.first?.content.isEmpty == true ? messages.dropFirst() : messages[...]
+        var prompt = bos
+        prompt += turns.map { "<|im_start|>\($0.role.rawValue)\n\($0.content)<|im_end|>\n" }.joined()
+        if addAssistant { prompt += "<|im_start|>assistant\n" }
         return prompt
     }
 

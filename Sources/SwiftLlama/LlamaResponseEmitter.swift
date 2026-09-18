@@ -5,24 +5,48 @@ import FoundationModels
 @available(iOS 27.0, macOS 27.0, *)
 struct LlamaResponseEmitter {
     let requestID: UUID
+    // Apple keeps request.id across tool continuations; transcript entries must remain distinct.
+    private let generationID = UUID()
     let inputTokens: Int
     let start: ContinuousClock.Instant
     let channel: LanguageModelExecutorGenerationChannel
+    var toolDefinitions: [Transcript.ToolDefinition] = []
+    var parsesTools = false
+    private var toolParser = LlamaToolParser()
+    private var rawOutput = ""
     private(set) var tokenCount = 0
     private var firstTokenTime: Double?
     private var parser = LlamaReasoningParser()
     private var hasAnswer = false
-    private var answerID: String { "\(requestID)-answer" }
+    private var answerID: String { "\(generationID)-answer" }
 
-    mutating func append(_ text: String) async {
+    mutating func append(_ text: String) async throws {
+        rawOutput += text
         tokenCount += 1
         if firstTokenTime == nil { firstTokenTime = start.duration(to: .now).llamaSeconds }
-        await send(parser.append(text))
+        let visible = parsesTools ? try toolParser.append(text) : text
+        await send(parser.append(visible))
         await publishMetadata(finished: false)
     }
 
-    mutating func finish() async {
+    mutating func finish() async throws {
+        let (trailing, calls) = parsesTools ? try toolParser.finish(definitions: toolDefinitions) : ("", [])
+        await send(parser.append(trailing))
         await send(parser.finish())
+        if !calls.isEmpty {
+            try Task.checkCancellation()
+            let entryID = "\(generationID)-tools"
+            for (index, call) in calls.enumerated() {
+                let id = "\(generationID)-call-\(index)"
+                await channel.send(.toolCalls(entryID: entryID, action: .toolCall(id: id, name: call.name, action: .appendArguments(call.arguments, tokenCount: 0))))
+                await channel.send(.toolCalls(entryID: entryID, action: .toolCall(id: id, name: call.name, action: .updateMetadata(metadata(finished: true)))))
+            }
+            await channel.send(.toolCalls(entryID: entryID, action: .updateUsage(
+                input: .init(totalTokenCount: inputTokens, cachedTokenCount: 0),
+                output: .init(totalTokenCount: tokenCount, reasoningTokenCount: 0)
+            )))
+            return
+        }
         await channel.send(.response(entryID: answerID, action: .updateUsage(
             input: .init(totalTokenCount: inputTokens, cachedTokenCount: 0),
             output: .init(totalTokenCount: tokenCount, reasoningTokenCount: 0)
@@ -40,11 +64,11 @@ struct LlamaResponseEmitter {
                 }
                 await channel.send(.response(entryID: answerID, action: .appendText(text, segmentID: "answer", tokenCount: 0)))
             case .reasoningStarted(let index):
-                let id = "\(requestID)-reasoning-\(index)"
+                let id = "\(generationID)-reasoning-\(index)"
                 await channel.send(.reasoning(entryID: id, action: .updateMetadata(metadata(finished: false))))
                 await channel.send(.reasoning(entryID: id, action: .appendText("", segmentID: "thought", tokenCount: 0)))
             case .reasoning(let index, let text):
-                await channel.send(.reasoning(entryID: "\(requestID)-reasoning-\(index)", action: .appendText(text, segmentID: "thought", tokenCount: 0)))
+                await channel.send(.reasoning(entryID: "\(generationID)-reasoning-\(index)", action: .appendText(text, segmentID: "thought", tokenCount: 0)))
             case .reasoningFinished: break
             }
         }
@@ -53,7 +77,7 @@ struct LlamaResponseEmitter {
     private func publishMetadata(finished: Bool) async {
         guard finished || hasAnswer || !parser.reasoning.isEmpty else { return }
         if !finished, !parser.reasoning.isEmpty, parser.isReasoning || !hasAnswer {
-            await channel.send(.reasoning(entryID: "\(requestID)-reasoning-\(parser.reasoning.count - 1)", action: .updateMetadata(metadata(finished: false))))
+            await channel.send(.reasoning(entryID: "\(generationID)-reasoning-\(parser.reasoning.count - 1)", action: .updateMetadata(metadata(finished: false))))
         } else {
             await channel.send(.response(entryID: answerID, action: .updateMetadata(metadata(finished: finished))))
         }
@@ -63,7 +87,7 @@ struct LlamaResponseEmitter {
         typealias Key = LlamaLanguageModel.Metadata
         var values: [String: any ConvertibleToGeneratedContent] = [
             Key.requestID: requestID.uuidString,
-            Key.rawOutput: parser.rawText,
+            Key.rawOutput: rawOutput,
             Key.isReasoning: parser.isReasoning,
             Key.finished: finished,
             Key.usageReported: true,
