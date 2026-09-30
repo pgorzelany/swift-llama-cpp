@@ -22,6 +22,6 @@ for filename in sys.argv[1:]:
         ttft = [r["prefillSeconds"] + r["firstTokenSeconds"] for r in data]
         print(f"| {profile} | {prompt} | {statistics.median(pp):.1f} | {statistics.median(tg):.1f} | {statistics.median(ttft):.3f} | {data[0]['loadSeconds']:.3f} | {min(tg):.1f}–{max(tg):.1f} |")
     with path.with_suffix(".csv").open("w", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=sorted(rows[0]))
+        writer = csv.DictWriter(handle, fieldnames=sorted(rows[0]), lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)

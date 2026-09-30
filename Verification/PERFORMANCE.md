@@ -139,4 +139,3 @@ LFM: bb741ebb106d543e9de114b843a3d3d73d51c74b5801e69da2abde821a0cb3e1.
 Nie porównujemy tych wyników liczbowo z wcześniejszym C++ audytem jako
 before/after: prompty, długość generacji i sampler nie były identyczne.
 Kontrolowanym before/after jest osobny test greedy host sampler.
-
