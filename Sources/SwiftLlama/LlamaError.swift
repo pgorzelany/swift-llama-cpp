@@ -8,6 +8,11 @@
 import Foundation
 
 public enum LlamaError: LocalizedError {
+    case busy
+    case invalidConfiguration
+    case invalidSamplingConfiguration
+    case invalidGrammar
+    case unsupportedModel
     case couldNotInitializeContext
     case modelInitializationFailed(diagnostics: String?)
     case contextInitializationFailed(diagnostics: String?)
@@ -18,6 +23,11 @@ public enum LlamaError: LocalizedError {
 
     public var errorDescription: String? {
         switch self {
+        case .busy: return "The model is preparing or stopping another operation."
+        case .invalidConfiguration: return "Invalid context, batch, or thread configuration."
+        case .invalidSamplingConfiguration: return "Invalid sampling parameters."
+        case .invalidGrammar: return "llama.cpp could not parse the requested grammar."
+        case .unsupportedModel: return "This runtime requires a decoder-only text model."
         case .couldNotInitializeContext:
             return "llama.cpp could not initialize the model context."
         case .modelInitializationFailed(let diagnostics):

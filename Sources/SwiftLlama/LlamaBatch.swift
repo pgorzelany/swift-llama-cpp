@@ -1,77 +1,74 @@
-//
-//  LlamaBatch.swift
-//  LlamaSwift
-//
-//  Created by Piotr Gorzelany on 11/10/2024.
-//
-
 import llama
 
 public final class LlamaBatch {
     private(set) var rawBatch: llama_batch
-    public var size: Int32 {
-        rawBatch.n_tokens
-    }
+    public let capacity: Int32
+    private let embeddingSize: Int32
+    public var size: Int32 { rawBatch.n_tokens }
 
-    /// Allocate a batch that can hold up to `initialSize` tokens for a single sequence.
+    /// Allocates owned token storage. Invalid capacities create an empty, non-writable batch.
     public init(initialSize: Int32) {
-        self.rawBatch = llama_batch_init(initialSize, 0, 1)
+        capacity = max(0, initialSize)
+        embeddingSize = 0
+        rawBatch = llama_batch_init(max(1, capacity), 0, 1)
     }
 
-    /// Allocate a batch that will carry external embeddings instead of token ids.
-    /// - Parameters:
-    ///   - capacity: Max number of embedding slots
-    ///   - embeddingSize: Size of each embedding vector (n_embd)
-    ///   - maxSequences: Max sequences per token (default 1)
-    public init(embeddingCapacity capacity: Int32, embeddingSize: Int32, maxSequences: Int32 = 1) {
-        self.rawBatch = llama_batch_init(capacity, embeddingSize, maxSequences)
+    /// Allocates owned embedding storage for vectors of exactly embeddingSize floats.
+    public init(embeddingCapacity: Int32, embeddingSize: Int32, maxSequences: Int32 = 1) {
+        capacity = embeddingSize > 0 && maxSequences > 0 ? max(0, embeddingCapacity) : 0
+        self.embeddingSize = max(1, embeddingSize)
+        rawBatch = llama_batch_init(max(1, capacity), self.embeddingSize, max(1, maxSequences))
     }
 
-    deinit {
-        llama_batch_free(rawBatch)
+    deinit { llama_batch_free(rawBatch) }
+    public func reset() { rawBatch.n_tokens = 0 }
+
+    /// Returns false for an embedding batch or a full batch without writing any memory.
+    @discardableResult
+    public func addToken(_ tokenId: llama_token, at position: llama_pos, logits: Bool) -> Bool {
+        guard embeddingSize == 0, size < capacity, tokenId >= 0, position >= 0 else { return false }
+        rawBatch.token[Int(size)] = tokenId
+        appendPosition(position, logits: logits)
+        return true
     }
 
-    /// Reset batch size to 0 without deallocating memory.
-    public func reset() {
-        rawBatch.n_tokens = 0
+    @discardableResult
+    public func setLastTokenLogits(_ logits: Bool) -> Bool {
+        guard size > 0 else { return false }
+        rawBatch.logits[Int(size - 1)] = logits ? 1 : 0
+        return true
     }
 
-    /// Add a token to the batch for a single sequence (seq_id 0).
-    public func addToken(_ tokenId: llama_token, at position: llama_pos, logits: Bool) {
-        rawBatch.token[Int(rawBatch.n_tokens)] = tokenId
-        rawBatch.pos[Int(rawBatch.n_tokens)] = position
-
-        // this is assuming we are only processing one sequence at a time
-        rawBatch.n_seq_id[Int(rawBatch.n_tokens)] = 1
-        rawBatch.seq_id[Int(rawBatch.n_tokens)]![0] = 0
-
-        rawBatch.logits[Int(rawBatch.n_tokens)] = logits ? 1 : 0
-
-        rawBatch.n_tokens += 1
-    }
-
-    /// Mark whether the last token should output logits.
-    public func setLastTokenLogits(_ logits: Bool) {
-        rawBatch.logits[Int(rawBatch.n_tokens - 1)] = logits ? 1 : 0
-    }
-
-     /// Convenience: build a single-sequence batch for a set of tokens where only the last token emits logits.
-     public static func singleSequence(tokens: [llama_token]) -> LlamaBatch {
-         var cTokens = tokens
-         let batch = llama_batch_get_one(&cTokens, Int32(tokens.count))
-         // Wrap into class to ensure free on deinit
-         let wrapper = LlamaBatch(initialSize: Int32(tokens.count))
-         wrapper.rawBatch = batch
-         return wrapper
-     }
-
-    /// Set an external embedding vector for the current token index.
-    /// Note: Caller must ensure the `LlamaBatch` was initialized with embeddings.
-    public func setEmbedding(_ vector: [Float]) {
-        vector.withUnsafeBufferPointer { src in
-            let idx = Int(rawBatch.n_tokens)
-            let n = vector.count
-            rawBatch.embd.advanced(by: idx * n).update(from: src.baseAddress!, count: n)
+    public static func singleSequence(tokens: [llama_token]) -> LlamaBatch {
+        precondition(tokens.count <= Int(Int32.max))
+        let batch = LlamaBatch(initialSize: Int32(tokens.count))
+        for (position, token) in tokens.enumerated() {
+            batch.addToken(token, at: Int32(position), logits: position == tokens.count - 1)
         }
+        return batch
+    }
+
+    /// Appends an embedding with position and output flags; invalid dimensions leave the batch unchanged.
+    @discardableResult
+    public func addEmbedding(_ vector: [Float], at position: llama_pos, logits: Bool = false) -> Bool {
+        guard embeddingSize > 0, vector.count == Int(embeddingSize), size < capacity, position >= 0 else { return false }
+        vector.withUnsafeBufferPointer { source in
+            rawBatch.embd.advanced(by: Int(size) * Int(embeddingSize)).update(from: source.baseAddress!, count: source.count)
+        }
+        appendPosition(position, logits: logits)
+        return true
+    }
+
+    /// Appends an embedding at the next sequential position.
+    @discardableResult
+    public func setEmbedding(_ vector: [Float]) -> Bool { addEmbedding(vector, at: size) }
+
+    private func appendPosition(_ position: llama_pos, logits: Bool) {
+        let index = Int(size)
+        rawBatch.pos[index] = position
+        rawBatch.n_seq_id[index] = 1
+        rawBatch.seq_id[index]![0] = 0
+        rawBatch.logits[index] = logits ? 1 : 0
+        rawBatch.n_tokens += 1
     }
 }

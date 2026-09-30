@@ -12,7 +12,7 @@ struct LlamaContextTests {
     @Test("Decode produces logits and embeddings")
     func testDecodeProducesSignals() async throws {
         let sut = try await makeContext()
-        await sut.updateSamplingConfig(.init(temperature: 0.7, seed: 1))
+        try await sut.updateSamplingConfig(.init(temperature: 0.7, seed: 1))
         try await sut.initializeCompletion(messages: [LlamaChatMessage(role: .user, content: "Hello")])
 
         // Generate one token so logits exist for idx -1
@@ -29,7 +29,7 @@ struct LlamaContextTests {
     @Test("State save/load roundtrip non-empty")
     func testStateRoundtrip() async throws {
         let sut = try await makeContext()
-        await sut.updateSamplingConfig(.init(temperature: 0.7, seed: 1))
+        try await sut.updateSamplingConfig(.init(temperature: 0.7, seed: 1))
         try await sut.initializeCompletion(messages: [LlamaChatMessage(role: .user, content: "Hello state")])
         _ = try await sut.generateNextToken()
 
@@ -51,7 +51,7 @@ struct LlamaContextTests {
     @Test("Memory operations clear and remove ranges")
     func testMemoryOperations() async throws {
         let sut = try await makeContext()
-        await sut.updateSamplingConfig(.init(temperature: 0.7, seed: 1))
+        try await sut.updateSamplingConfig(.init(temperature: 0.7, seed: 1))
         try await sut.initializeCompletion(messages: [LlamaChatMessage(role: .user, content: "Hello memory ops")])
         _ = try await sut.generateNextToken()
 

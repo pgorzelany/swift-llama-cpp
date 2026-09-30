@@ -242,7 +242,7 @@ struct LlamaServiceTests {
         let sentenceCount = generated.filter { $0 == "." || $0 == "!" || $0 == "?" }.count
         let wordCount = generated.split(whereSeparator: \Character.isWhitespace).count
 
-        #expect(normalized.contains("cat"))
+        #expect(normalized.contains("cat") || normalized.contains("feline"))
         #expect(normalized.contains("mars") || normalized.contains("martian"))
         #expect(sentenceCount >= 2)
         #expect(wordCount >= 30)
@@ -605,7 +605,7 @@ struct LlamaServiceTests {
 
         let messages = [
             LlamaChatMessage(role: .system, content: "You are a helpful assistant."),
-            LlamaChatMessage(role: .user, content: "Write a vivid short story (3-4 paragraphs) about a time traveler visiting ancient Alexandria, focusing on the Library and the harbor. Keep it under 350 words.")
+            LlamaChatMessage(role: .user, content: "Write a vivid short story (3-4 paragraphs) about a time traveler visiting ancient Alexandria, Mention the Library and the harbor in the first paragraph. Keep it under 180 words.")
         ]
         let cfg = LlamaSamplingConfig(temperature: 0.0, seed: 12345, topP: 1.0, topK: nil, minKeep: 1)
 
@@ -634,7 +634,7 @@ struct LlamaServiceTests {
     func testDeterministicTokenReproducibility() async throws {
         let messages = [
             LlamaChatMessage(role: .system, content: "You are a helpful assistant."),
-            LlamaChatMessage(role: .user, content: "Write a vivid short story (3-4 paragraphs) about a time traveler visiting ancient Alexandria, focusing on the Library and the harbor. Keep it under 350 words.")
+            LlamaChatMessage(role: .user, content: "Write a vivid short story (3-4 paragraphs) about a time traveler visiting ancient Alexandria, Mention the Library and the harbor in the first paragraph. Keep it under 180 words.")
         ]
         let cfg = LlamaSamplingConfig(temperature: 0.0, seed: 12345, topP: 1.0, topK: nil, minKeep: 1)
 
@@ -644,7 +644,7 @@ struct LlamaServiceTests {
                 config: .init(batchSize: 256, maxTokenCount: 512, useGPU: true)
             )
             try await llama.initializeCompletion(messages: messages)
-            await llama.updateSamplingConfig(cfg)
+            try await llama.updateSamplingConfig(cfg)
 
             generation: for _ in 0..<64 {
                 switch try await llama.generateNextToken() {

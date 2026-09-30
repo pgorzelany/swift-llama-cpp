@@ -16,14 +16,14 @@ enum LlamaTypedJSONGrammarBuilder {
     ///
     /// Notes and limitations:
     /// - Enforces allowed keys and value types.
-    /// - Does not strictly enforce presence of required keys (to avoid combinatorial explosion).
-    ///   Optional properties allow `null` in addition to the underlying value type.
+    /// - Emits each key exactly once in sorted order, including required keys.
+    /// - Optional properties are emitted with their value or `null`.
     /// - Dictionaries are not currently supported; prefer concrete structs.
     static func makeGrammarConfig<T: Decodable>(for type: T.Type) throws -> LlamaGrammarConfig {
         let recorder = SchemaRecorder()
         let rootSlot = SchemaSlot()
         let decoder = RecordingDecoder(recorder: recorder, target: rootSlot)
-        _ = try? T(from: decoder)
+        _ = try T(from: decoder)
         guard let rootNode = rootSlot.node else {
             throw TypedGrammarError.unsupported("Could not infer schema for type: \(String(describing: T.self))")
         }
@@ -67,6 +67,15 @@ final class SchemaNode {
 }
 
 final class SchemaRecorder {
+    private var containerCount = 0
+
+    func checkComplexity() throws {
+        containerCount += 1
+        guard containerCount <= 128 else {
+            throw TypedGrammarError.unsupported("Recursive or excessively complex Decodable schema")
+        }
+    }
+
     func registerPrimitiveString(into slot: SchemaSlot) {
         if slot.node == nil { slot.node = SchemaNode(kind: .string) }
     }
@@ -168,18 +177,21 @@ final class RecordingDecoder: Decoder {
     var userInfo: [CodingUserInfoKey : Any] { [:] }
 
     func container<Key>(keyedBy type: Key.Type) throws -> KeyedDecodingContainer<Key> where Key : CodingKey {
+        try recorder.checkComplexity()
         let builder = recorder.beginObject(into: target)
         let container = RecordingKeyedContainer<Key>(recorder: recorder, object: builder)
         return KeyedDecodingContainer(container)
     }
 
     func unkeyedContainer() throws -> UnkeyedDecodingContainer {
+        try recorder.checkComplexity()
         // Start array with one synthetic element to capture element type
         let elementSlot = recorder.beginArray(into: target)
         return RecordingUnkeyedContainer(recorder: recorder, parent: target, elementSlot: elementSlot)
     }
 
     func singleValueContainer() throws -> SingleValueDecodingContainer {
+        try recorder.checkComplexity()
         return RecordingSingleValueContainer(recorder: recorder, target: target)
     }
 }
@@ -240,26 +252,12 @@ struct RecordingKeyedContainer<Key: CodingKey>: KeyedDecodingContainerProtocol {
 
     // Nested / generic
     func decode<T>(_ type: T.Type, forKey key: Key) throws -> T where T : Decodable {
-        // Arrays are handled by nested decoding path as well
         var result: T?
         try object.addRequired(key: key.stringValue) { slot in
-            let nestedDecoder = RecordingDecoder(recorder: recorder, target: slot)
-            result = try? T(from: nestedDecoder)
+            result = try T(from: RecordingDecoder(recorder: recorder, target: slot))
         }
-        // If T is a primitive or simple type and result is still nil, try to materialize via JSONDecoder as a fallback
-        if let value = result { return value }
-        // Fallbacks
-        if T.self == String.self { return ("" as! T) }
-        if T.self == Bool.self { return (false as! T) }
-        if T.self == Int.self { return (0 as! T) }
-        if T.self == Double.self { return (0.0 as! T) }
-        if T.self == Float.self { return (0 as! T) }
-        if T.self == [String].self { return ([] as! T) }
-        // Last resort empty JSON value decoding for collections
-        if let arr = try? JSONDecoder().decode(T.self, from: Data("[]".utf8)) { return arr }
-        if let obj = try? JSONDecoder().decode(T.self, from: Data("{}".utf8)) { return obj }
-        // Best effort
-        return try T(from: RecordingDecoder(recorder: recorder, target: SchemaSlot()))
+        guard let result else { throw TypedGrammarError.unsupported("Unable to infer field schema") }
+        return result
     }
 
     func decodeIfPresent(_ type: String.Type, forKey key: Key) throws -> String? {
@@ -296,7 +294,7 @@ struct RecordingKeyedContainer<Key: CodingKey>: KeyedDecodingContainerProtocol {
         var value: T?
         try object.addOptional(key: key.stringValue) { slot in
             let nestedDecoder = RecordingDecoder(recorder: recorder, target: slot)
-            value = try? T(from: nestedDecoder)
+            value = try T(from: nestedDecoder)
         }
         return value
     }
@@ -409,12 +407,12 @@ final class GrammarGenerator {
     func generateGrammar(for root: SchemaNode) -> String {
         var rules: [String] = []
         var nameMap: [ObjectIdentifier: String] = [:]
-        let rootName = emitRule(for: root, preferredName: "root_value", rules: &rules, names: &nameMap)
+        let rootName = emitRule(for: root, preferredName: "root-value", rules: &rules, names: &nameMap)
         let prelude = baseRules()
         let body = rules.joined(separator: "\n")
         let rootLine = "root ::= \(rootName)\n"
         // Place the root rule first, as expected by llama.cpp grammar parser
-        return prelude + "\n" + rootLine + body + "\n"
+        return prelude + "\n" + (rootLine + body) + "\n"
     }
 
     private func emitRule(for node: SchemaNode, preferredName: String, rules: inout [String], names: inout [ObjectIdentifier: String]) -> String {
@@ -443,35 +441,25 @@ final class GrammarGenerator {
             names[key] = name
             rules.append("\(name) ::= \"null\"")
         case .array(let element):
-            name = preferredName.hasPrefix("array_") ? preferredName : "array_\(preferredName)"
+            name = preferredName.hasPrefix("array-") ? preferredName : "array-\(preferredName)"
             names[key] = name
-            let child = emitRule(for: element, preferredName: "elem_\(name)", rules: &rules, names: &names)
+            let child = emitRule(for: element, preferredName: "elem-\(name)", rules: &rules, names: &names)
             rules.append(#"\#(name) ::= "[" ws ( \#(child) ( ws "," ws \#(child) )* )? ws "]""#)
         case .object(let required, let optional):
-            name = preferredName.hasPrefix("object_") ? preferredName : "object_\(preferredName)"
+            name = preferredName.hasPrefix("object-") ? preferredName : "object-\(preferredName)"
             names[key] = name
-            // Build pair alternatives
             var pairRules: [String] = []
-            for (k, v) in required {
-                let child = emitRule(for: v, preferredName: "val_\(sanitize(k))_\(name)", rules: &rules, names: &names)
-                let pairName = "pair_\(sanitize(k))_\(name)"
-                rules.append(#"\#(pairName) ::= "\#(escapeJSONStringLiteral(k))" ws ":" ws \#(child)"#)
+            for k in Set(required.keys).union(optional.keys).sorted() {
+                let value = required[k] ?? optional[k]!
+                let child = emitRule(for: value, preferredName: "val-\(sanitize(k))-\(name)", rules: &rules, names: &names)
+                let pairName = "pair-\(sanitize(k))-\(name)"
+                let encodedKey = String(decoding: try! JSONEncoder().encode(k), as: UTF8.self)
+                let valueRule = required[k] != nil ? child : #"( \#(child) | "null" )"#
+                rules.append(#"\#(pairName) ::= "\#(escapeJSONStringLiteral(encodedKey))" ws ":" ws \#(valueRule)"#)
                 pairRules.append(pairName)
             }
-            for (k, v) in optional {
-                let child = emitRule(for: v, preferredName: "val_\(sanitize(k))_\(name)", rules: &rules, names: &names)
-                let pairName = "pair_\(sanitize(k))_\(name)"
-                rules.append(#"\#(pairName) ::= "\#(escapeJSONStringLiteral(k))" ws ":" ws ( \#(child) | "null" )"#)
-                pairRules.append(pairName)
-            }
-            if pairRules.isEmpty {
-                rules.append(#"\#(name) ::= "{" ws "}""#)
-            } else {
-                let memberName = "member_\(name)"
-                let memberAlt = pairRules.joined(separator: " | ")
-                rules.append("\(memberName) ::= \(memberAlt)")
-                rules.append(#"\#(name) ::= "{" ws ( \#(memberName) ( ws "," ws \#(memberName) )* )? ws "}""#)
-            }
+            let members = pairRules.joined(separator: #" ws "," ws "#)
+            rules.append(#"\#(name) ::= "{" ws \#(members) ws "}""#)
         }
         return name
     }
@@ -480,7 +468,7 @@ final class GrammarGenerator {
         return #"""
         ws     ::= ([ \t\n] ws)?
         string ::= "\"" (
-          [^"\\u0000-\u001f] |
+          [^"\\\x00-\x1F] |
           "\\" (["\\/bfnrt] | "u" [0-9a-fA-F]{4})
         )* "\""
         int    ::= ("-")? ("0" | [1-9] [0-9]*)
@@ -504,9 +492,6 @@ final class GrammarGenerator {
     }
 
     private func sanitize(_ s: String) -> String {
-        let allowed = s.unicodeScalars.map { CharacterSet.alphanumerics.contains($0) ? Character($0) : "_" }
-        return String(allowed).replacingOccurrences(of: "__+", with: "_", options: .regularExpression)
+        "k" + s.utf8.map { String(format: "%02x", $0) }.joined()
     }
 }
-
-

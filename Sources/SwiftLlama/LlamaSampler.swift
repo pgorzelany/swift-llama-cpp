@@ -14,59 +14,46 @@ import llama
 /// This class configures and manages a series of samplers to control the token generation process.
 /// The chain can include samplers for grammar enforcement, temperature, top-k, top-p, and more.
 public final class LlamaSampler {
-    private let samplerPointer: UnsafeMutablePointer<llama_sampler>
+    let samplerPointer: UnsafeMutablePointer<llama_sampler>
 
-    /// Initializes a new sampling chain based on the provided configuration.
-    ///
-    /// The sampler chain is built in a specific order to ensure correctness.
-    /// If a grammar is provided in the `config`, it is always added first to constrain the possible tokens early.
-    /// Other samplers like top-k, top-p, and temperature are added afterward. The chain always ends with a
-    /// distribution sampler to make the final selection.
-    ///
-    /// - Parameters:
-    ///   - config: The `LlamaSamplingConfig` that defines which samplers to use and their parameters.
-    ///   - model: The `LlamaModel` is required to access the vocabulary for the grammar sampler.
-    public init(config: LlamaSamplingConfig, model: LlamaModel) {
-        print(config)
-        let sparams = llama_sampler_chain_default_params()
-        self.samplerPointer = llama_sampler_chain_init(sparams)
+    private let model: LlamaModel
 
-        if let grammarConfig = config.grammarConfig {
-            if let grammarSampler = llama_sampler_init_grammar(model.vocabPointer, grammarConfig.grammar, grammarConfig.grammarRoot) {
-                llama_sampler_chain_add(samplerPointer, grammarSampler)
-            } else {
-                // If grammar init fails, we skip adding it to the chain.
-                // Consider surfacing this as a thrown error in the initializer signature.
+    /// Builds a chain with penalties before filters; invalid grammar or parameters throw.
+    public init(config: LlamaSamplingConfig, model: LlamaModel) throws {
+        guard config.temperature.isFinite, config.temperature >= 0,
+              config.topP.isFinite, config.topP > 0, config.topP <= 1,
+              config.minKeep > 0, config.topK.map({ $0 >= 0 }) ?? true else {
+            throw LlamaError.invalidSamplingConfiguration
+        }
+        if let penalty = config.repetitionPenaltyConfig {
+            guard penalty.lastN >= 0, penalty.repeatPenalty.isFinite, penalty.repeatPenalty > 0,
+                  penalty.freqPenalty.isFinite, penalty.presentPenalty.isFinite else {
+                throw LlamaError.invalidSamplingConfiguration
             }
         }
-
-        // Add samplers based on the configuration
-        if let topK = config.topK {
-            let topKSampler = llama_sampler_init_top_k(topK)
-            llama_sampler_chain_add(samplerPointer, topKSampler)
+        self.model = model
+        let pointer = llama_sampler_chain_init(llama_sampler_chain_default_params())!
+        if let grammar = config.grammarConfig {
+            guard let grammarSampler = llama_sampler_init_grammar(model.vocabPointer, grammar.grammar, grammar.grammarRoot) else {
+                llama_sampler_free(pointer)
+                throw LlamaError.invalidGrammar
+            }
+            llama_sampler_chain_add(pointer, grammarSampler)
         }
-
-        let topPSampler = llama_sampler_init_top_p(config.topP, config.minKeep)
-        llama_sampler_chain_add(samplerPointer, topPSampler)
-
-        if let penaltyConfig = config.repetitionPenaltyConfig, penaltyConfig.lastN > 0 {
-            let penaltiesSampler = llama_sampler_init_penalties(
-                model.vocabularySize(),
-                penaltyConfig.lastN,
-                penaltyConfig.repeatPenalty,
-                penaltyConfig.freqPenalty,
-                penaltyConfig.presentPenalty
-            )
-            llama_sampler_chain_add(samplerPointer, penaltiesSampler)
+        if let penalty = config.repetitionPenaltyConfig, penalty.lastN != 0,
+           penalty.repeatPenalty != 1 || penalty.freqPenalty != 0 || penalty.presentPenalty != 0 {
+            llama_sampler_chain_add(pointer, llama_sampler_init_penalties(
+                model.vocabularySize(), penalty.lastN, penalty.repeatPenalty, penalty.freqPenalty, penalty.presentPenalty))
         }
-
-        // Always add temperature sampler
-        let tempSampler = llama_sampler_init_temp(config.temperature)
-        llama_sampler_chain_add(samplerPointer, tempSampler)
-
-        let seed = config.seed
-        let distSampler = llama_sampler_init_dist(seed)
-        llama_sampler_chain_add(samplerPointer, distSampler)
+        if config.temperature == 0 {
+            llama_sampler_chain_add(pointer, llama_sampler_init_greedy())
+        } else {
+            if let topK = config.topK { llama_sampler_chain_add(pointer, llama_sampler_init_top_k(topK)) }
+            llama_sampler_chain_add(pointer, llama_sampler_init_top_p(config.topP, config.minKeep))
+            llama_sampler_chain_add(pointer, llama_sampler_init_temp(config.temperature))
+            llama_sampler_chain_add(pointer, llama_sampler_init_dist(config.seed))
+        }
+        self.samplerPointer = pointer
     }
 
     deinit {
@@ -89,18 +76,17 @@ public final class LlamaSampler {
         return llama_sampler_sample(samplerPointer, context.contextPointer, -1)
     }
 
-    /// Manually accepts a token to update the state of the samplers in the chain.
-    ///
-    /// This method is primarily used to initialize the state of the samplers before generation begins.
-    /// For example, when using a grammar, you should call this method for each token in your prompt to ensure the
-    /// grammar state is correctly synchronized with the prompt's content.
-    ///
-    /// For the main generation loop, the `sample(context:lastTokenIndex:)` method should be used instead, as it handles acceptance automatically.
-    ///
-    /// - Parameter token: The `llama_token` to accept.
-    /// Manually accept a token to update the internal state of samplers.
+    /// Accepts a generated token, advancing penalties and any output grammar.
     public func accept(token: llama_token) {
         llama_sampler_accept(samplerPointer, token)
+    }
+
+    /// Seeds repetition history without advancing the output grammar.
+    public func acceptPrompt(tokens: [llama_token]) {
+        for index in 0..<count() where name(at: Int32(index)) == "penalties" {
+            guard let penalty = llama_sampler_chain_get(samplerPointer, Int32(index)) else { continue }
+            for token in tokens { llama_sampler_accept(penalty, token) }
+        }
     }
 
     // Chain management helpers
@@ -116,21 +102,20 @@ public final class LlamaSampler {
     /// Clone the sampler chain.
     public func clone() -> LlamaSampler? {
         guard let cloned = llama_sampler_clone(samplerPointer) else { return nil }
-        // Wrap the returned chain pointer in a new Swift object
-        // We cannot directly assign to private let, so build via a minimal init
-        return LlamaSampler(adopting: cloned)
+        return LlamaSampler(adopting: cloned, model: model)
     }
 
     /// Internal initializer to adopt an existing sampler pointer.
-    private init(adopting pointer: UnsafeMutablePointer<llama_sampler>) {
+    private init(adopting pointer: UnsafeMutablePointer<llama_sampler>, model: LlamaModel) {
+        self.model = model
         self.samplerPointer = pointer
     }
 
     // Performance helpers (only valid for chains)
-    /// Print sampler performance data via logger and return empty string placeholder.
+    /// Return raw C counters; they remain zero when chain performance collection is disabled.
     public func perfDataDescription() -> String {
-        llama_perf_sampler_print(samplerPointer)
-        return "" // the C function prints to stderr via log; we expose a no-op string here
+        let data = llama_perf_sampler(samplerPointer)
+        return "sampled=\(data.n_sample), samplingMilliseconds=\(data.t_sample_ms)"
     }
 
     // MARK: - Chain management
@@ -140,13 +125,17 @@ public final class LlamaSampler {
 
     /// Get a reference name for the i-th sampler in the chain if available.
     public func name(at index: Int32) -> String {
-        guard let s = llama_sampler_chain_get(samplerPointer, index) else { return "" }
+        guard index >= 0, index < count(), let s = llama_sampler_chain_get(samplerPointer, index) else { return "" }
         guard let c = llama_sampler_name(s) else { return "" }
         return String(cString: c)
     }
 
-    /// Remove the i-th sampler from the chain (ownership transfers to the chain's previous owner if any).
-    public func remove(at index: Int32) {
-        _ = llama_sampler_chain_remove(samplerPointer, index)
+    /// Frees a removed stage. The final token selector cannot be removed.
+    @discardableResult
+    public func remove(at index: Int32) -> Bool {
+        guard index >= 0, index < count() - 1,
+              let removed = llama_sampler_chain_remove(samplerPointer, index) else { return false }
+        llama_sampler_free(removed)
+        return true
     }
 }

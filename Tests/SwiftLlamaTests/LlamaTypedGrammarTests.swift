@@ -64,10 +64,10 @@ struct LlamaTypedGrammarTests {
     func testSimpleStructGrammar() throws {
         let cfg = try LlamaTypedJSONGrammarBuilder.makeGrammarConfig(for: Person.self)
         #expect(cfg.grammar.contains("root"))
-        #expect(cfg.grammar.contains("object_root_value"))
-        #expect(cfg.grammar.contains("\"name\""))
-        #expect(cfg.grammar.contains("\"age\""))
-        #expect(cfg.grammar.contains("\"city\""))
+        #expect(cfg.grammar.contains("object-root-value"))
+        #expect(cfg.grammar.contains("\\\"name\\\""))
+        #expect(cfg.grammar.contains("\\\"age\\\""))
+        #expect(cfg.grammar.contains("\\\"city\\\""))
         // Optional allows null
         #expect(cfg.grammar.contains("| \"null\""))
     }
@@ -75,50 +75,50 @@ struct LlamaTypedGrammarTests {
     @Test("Generates grammar for nested arrays and optionals")
     func testNestedArrayGrammar() throws {
         let cfg = try LlamaTypedJSONGrammarBuilder.makeGrammarConfig(for: Catalog.self)
-        #expect(cfg.grammar.contains("array_"))
-        #expect(cfg.grammar.contains("\"items\""))
-        #expect(cfg.grammar.contains("\"id\""))
-        #expect(cfg.grammar.contains("\"title\""))
-        #expect(cfg.grammar.contains("\"tags\""))
+        #expect(cfg.grammar.contains("array-"))
+        #expect(cfg.grammar.contains("\\\"items\\\""))
+        #expect(cfg.grammar.contains("\\\"id\\\""))
+        #expect(cfg.grammar.contains("\\\"title\\\""))
+        #expect(cfg.grammar.contains("\\\"tags\\\""))
     }
 
     @Test("Grammar covers deep nesting and optional fields")
     func testDeepNesting() throws {
         let cfg = try LlamaTypedJSONGrammarBuilder.makeGrammarConfig(for: DeepNest.self)
-        #expect(cfg.grammar.contains("\"l1\""))
-        #expect(cfg.grammar.contains("\"l2\""))
-        #expect(cfg.grammar.contains("\"value\""))
-        #expect(cfg.grammar.contains("\"count\""))
+        #expect(cfg.grammar.contains("\\\"l1\\\""))
+        #expect(cfg.grammar.contains("\\\"l2\\\""))
+        #expect(cfg.grammar.contains("\\\"value\\\""))
+        #expect(cfg.grammar.contains("\\\"count\\\""))
         #expect(cfg.grammar.contains("| \"null\""))
     }
 
     @Test("Grammar includes enum raw string fields")
     func testEnums() throws {
-        let cfg = try LlamaTypedJSONGrammarBuilder.makeGrammarConfig(for: WithEnum.self)
-        // Enums are modeled as strings in this first version
-        #expect(cfg.grammar.contains("\"status\""))
-        #expect(cfg.grammar.contains("string"))
+        // An arbitrary enum cannot be inferred by decoding dummy string values.
+        #expect(throws: (any Error).self) {
+            _ = try LlamaTypedJSONGrammarBuilder.makeGrammarConfig(for: WithEnum.self)
+        }
     }
 
     @Test("Grammar handles all primitive number types and bool")
     func testPrimitives() throws {
         let cfg = try LlamaTypedJSONGrammarBuilder.makeGrammarConfig(for: Primitives.self)
-        #expect(cfg.grammar.contains("\"s\""))
-        #expect(cfg.grammar.contains("\"i\""))
-        #expect(cfg.grammar.contains("\"u\""))
-        #expect(cfg.grammar.contains("\"f\""))
-        #expect(cfg.grammar.contains("\"d\""))
-        #expect(cfg.grammar.contains("\"b\""))
+        #expect(cfg.grammar.contains("\\\"s\\\""))
+        #expect(cfg.grammar.contains("\\\"i\\\""))
+        #expect(cfg.grammar.contains("\\\"u\\\""))
+        #expect(cfg.grammar.contains("\\\"f\\\""))
+        #expect(cfg.grammar.contains("\\\"d\\\""))
+        #expect(cfg.grammar.contains("\\\"b\\\""))
     }
 
     @Test("Grammar supports arrays of primitives and objects")
     func testMixedArrays() throws {
         let cfg = try LlamaTypedJSONGrammarBuilder.makeGrammarConfig(for: MixedArrays.self)
-        #expect(cfg.grammar.contains("\"names\""))
-        #expect(cfg.grammar.contains("\"numbers\""))
-        #expect(cfg.grammar.contains("\"people\""))
+        #expect(cfg.grammar.contains("\\\"names\\\""))
+        #expect(cfg.grammar.contains("\\\"numbers\\\""))
+        #expect(cfg.grammar.contains("\\\"people\\\""))
         // Should have array rules
-        #expect(cfg.grammar.contains("array_"))
+        #expect(cfg.grammar.contains("array-"))
     }
 
     @Test("Streaming typed JSON for Person produces valid JSON")
@@ -142,7 +142,8 @@ struct LlamaTypedGrammarTests {
         }
         let data = text.data(using: .utf8)
         #expect(data != nil)
-        if let data { _ = try? JSONDecoder().decode(Person.self, from: data) }
+        _ = try JSONDecoder().decode(Person.self, from: #require(data))
+        await service.stopCompletion()
     }
 }
 

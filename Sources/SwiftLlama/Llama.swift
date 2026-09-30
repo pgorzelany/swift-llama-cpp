@@ -10,7 +10,9 @@ final actor Llama {
     private let model: LlamaModel
     let context: LlamaContext
     private var batch: LlamaBatch
-    private var sampler: LlamaSampler!
+    private var sampler: LlamaSampler?
+    private var textDecoder = LlamaUTF8Decoder()
+    private var savedState: (data: Data, tokens: [llama_token], sampler: LlamaSampler?, decoder: LlamaUTF8Decoder, logits: [Float]?)?
 
     // Configuration
 
@@ -22,12 +24,22 @@ final actor Llama {
     var processedTokens: [llama_token] = []
 
     init(modelPath: String, config: LlamaConfig) throws {
+        guard config.batchSize > 0, config.batchSize <= UInt32(Int32.max),
+              config.maxTokenCount >= 8, config.maxTokenCount <= UInt32(Int32.max),
+              config.microBatchSize.map({ $0 > 0 && $0 <= config.batchSize }) ?? true,
+              config.nThreads.map({ $0 > 0 }) ?? true,
+              config.nThreadsBatch.map({ $0 > 0 }) ?? true else { throw LlamaError.invalidConfiguration }
         self.config = config
         LlamaLog.installDiagnosticCapture()
-        llama_backend_init()
+        LlamaBackend.initialize()
         var model_params = llama_model_default_params()
 
-        if !config.useGPU {
+        var useGPU = config.useGPU && LlamaBackend.supportsGpuOffload
+        #if targetEnvironment(simulator)
+        useGPU = false
+        #endif
+
+        if !useGPU {
             model_params.n_gpu_layers = 0
         }
 
@@ -45,16 +57,19 @@ final actor Llama {
             )
         }
 
-        let n_threads = ProcessInfo.processInfo.processorCount - 1
-        print("Using \(n_threads) threads")
+        guard model.hasDecoder(), !model.hasEncoder(), !model.isDiffusion(), model.trainedContextSize() >= 8 else {
+            throw LlamaError.unsupportedModel
+        }
+        let effectiveContext = min(UInt32(model.trainedContextSize()), config.maxTokenCount)
 
         var contextParam = llama_context_default_params()
-        contextParam.n_ctx = config.maxTokenCount
-        contextParam.n_threads       = 1 // UInt32(n_threads) its actually faster if less threads are doing work
-        contextParam.n_threads_batch = 1 // UInt32(n_threads)
+        contextParam.n_ctx = effectiveContext
+        contextParam.n_threads = config.nThreads ?? (useGPU ? 1 : LlamaConfig.cpuThreadCount)
+        contextParam.n_threads_batch = config.nThreadsBatch ?? contextParam.n_threads
         contextParam.n_batch = config.batchSize
-        contextParam.n_ubatch = config.batchSize
-        contextParam.offload_kqv = true
+        contextParam.n_ubatch = config.microBatchSize ?? config.batchSize
+        contextParam.offload_kqv = useGPU
+        contextParam.op_offload = useGPU
 
         let contextDiagnosticMarker = LlamaLog.marker()
         let context = LlamaContext(model: model, parameters: contextParam)
@@ -66,15 +81,12 @@ final actor Llama {
         }
 
 
-        self.maxTokenCount = min(UInt32(model.trainedContextSize()), config.maxTokenCount)
+        self.maxTokenCount = min(context.contextSize(), effectiveContext)
         self.model = context.model
         self.context = context
         self.batch = .init(initialSize: Int32(config.batchSize))
     }
 
-    deinit {
-        llama_backend_free()
-    }
 
     // Expose some backend/system utilities for convenience
     /// Return system info string from the backend.
@@ -92,13 +104,29 @@ final actor Llama {
     func getLastLogits() -> [Float]? { context.lastLogits() }
     func getEmbeddings() -> [Float]? { context.embeddings(at: -1) }
     func enableEmbeddingsOutput(_ enabled: Bool) { context.setEmbeddingsOutput(enabled) }
-    func saveStateData() -> Data { context.saveState() }
-    func loadStateData(_ data: Data) -> Bool { context.loadState(data) }
+    func saveStateData() -> Data {
+        let data = context.saveState()
+        savedState = (data, processedTokens, sampler?.clone(), textDecoder, processedTokens.isEmpty ? nil : context.lastLogits())
+        return data
+    }
+    func loadStateData(_ data: Data) -> Bool {
+        guard let savedState, !data.isEmpty, savedState.data == data, context.loadState(data) else { return false }
+        // This llama.cpp revision serializes memory but does not include output logits.
+        if let logits = savedState.logits, !context.restoreLastLogits(logits) {
+            clear()
+            return false
+        }
+        processedTokens = savedState.tokens
+        currentTokenPosition = Int32(processedTokens.count)
+        sampler = savedState.sampler?.clone()
+        textDecoder = savedState.decoder
+        return true
+    }
     func setThreads(nThreads: Int32, nThreadsBatch: Int32) { context.setThreads(nThreads: nThreads, nThreadsBatch: nThreadsBatch) }
     func getThreads() -> (Int32, Int32) { (context.nThreads(), context.nThreadsBatch()) }
     func kvMinPosition() -> Int32 { context.memory.minPosition(for: 0) }
     func kvMaxPosition() -> Int32 { context.memory.maxPosition(for: 0) }
-    func clearKV() { context.clearKVCache() }
+    func clearKV() { clear() }
 
     /// Return the full processed token id sequence (prompt + generated).
     func getProcessedTokenIds() -> [llama_token] { processedTokens }
@@ -116,7 +144,7 @@ final actor Llama {
         try Task.checkCancellation()
         let formattedPrompt = model.applyChatTemplate(to: messages, addAssistant: addingAssistant)
         guard !formattedPrompt.isEmpty else { throw LlamaError.chatTemplateError }
-        let usedTokens = model.tokenize(text: formattedPrompt, addBos: model.shouldAddBos(), special: true).count
+        let usedTokens = tokenizePrompt(formattedPrompt).count
         return LlamaContextUsage(
             usedTokens: usedTokens,
             effectiveCapacity: max(0, Int(maxTokenCount) - 5)
@@ -124,34 +152,43 @@ final actor Llama {
     }
 
     private func initializeCompletion(text: String) throws {
-        let tokenList = model.tokenize(text: text, addBos: model.shouldAddBos(), special: true)
+        let tokenList = tokenizePrompt(text)
+        guard !tokenList.isEmpty else { throw LlamaError.chatTemplateError }
+        textDecoder.reset()
         guard tokenList.count < maxTokenCount - 4 else {
             throw LlamaError.contextSizeLimitExeeded
         }
 
-        if tokenList.starts(with: processedTokens) {
-            print("### Using cached processing")
-            try processPrompt(tokens: Array(tokenList[processedTokens.count...]), startIndex: processedTokens.count)
-        } else {
-            // Check if we can optimize by only clearing from the divergence point
-            let divergenceIndex = findDivergenceIndex(newTokenList: tokenList, processedTokens: processedTokens)
-            
-            if divergenceIndex > 0 && shouldUsePartialOptimization(divergenceIndex: divergenceIndex, totalProcessed: processedTokens.count) {
-                print("### Using partial optimization from position \(divergenceIndex)")
-                do {
-                    try optimizedReprocessing(newTokenList: tokenList, divergenceIndex: divergenceIndex)
-                } catch is CancellationError {
-                    throw CancellationError()
-                } catch {
-                    print("Partial optimization failed, falling back to full reprocessing")
+        do {
+            if tokenList.starts(with: processedTokens) {
+                print("### Using cached processing")
+                try processPrompt(tokens: Array(tokenList[processedTokens.count...]), startIndex: processedTokens.count)
+            } else {
+                // Check if we can optimize by only clearing from the divergence point
+                let divergenceIndex = findDivergenceIndex(newTokenList: tokenList, processedTokens: processedTokens)
+
+                if divergenceIndex > 0 && shouldUsePartialOptimization(divergenceIndex: divergenceIndex, totalProcessed: processedTokens.count) {
+                    print("### Using partial optimization from position \(divergenceIndex)")
+                    do {
+                        try optimizedReprocessing(newTokenList: tokenList, divergenceIndex: divergenceIndex)
+                    } catch is CancellationError {
+                        throw CancellationError()
+                    } catch {
+                        print("Partial optimization failed, falling back to full reprocessing")
+                        clear()
+                        try processPrompt(tokens: tokenList, startIndex: 0)
+                    }
+                } else {
+                    print("### Full reprocessing required")
                     clear()
                     try processPrompt(tokens: tokenList, startIndex: 0)
                 }
-            } else {
-                print("### Full reprocessing required")
-                clear()
-                try processPrompt(tokens: tokenList, startIndex: 0)
             }
+            sampler?.reset()
+            sampler?.acceptPrompt(tokens: processedTokens)
+        } catch {
+            clear()
+            throw error
         }
     }
 
@@ -165,20 +202,20 @@ final actor Llama {
         }
         return minLength
     }
-    
+
     /// Decide whether to use partial optimization based on the divergence point
     private func shouldUsePartialOptimization(divergenceIndex: Int, totalProcessed: Int) -> Bool {
         // Only use partial optimization if:
         // 1. We have a significant amount of processed tokens (at least 10)
         // 2. The divergence is not too early (at least 50% of tokens match)
         // 3. The divergence is not at the very beginning
-        
+
         guard divergenceIndex > 0 && totalProcessed >= 10 else { return false }
-        
+
         let matchPercentage = Double(divergenceIndex) / Double(totalProcessed)
         return matchPercentage >= 0.5 // At least 50% of tokens match
     }
-    
+
     /// Optimized reprocessing that only clears cache from the divergence point
     private func optimizedReprocessing(newTokenList: [llama_token], divergenceIndex: Int) throws {
         // A shorter, fully matching prompt still needs its final token decoded to refresh logits.
@@ -196,29 +233,37 @@ final actor Llama {
         try processPrompt(tokens: Array(newTokenList[resumeIndex...]), startIndex: resumeIndex)
     }
 
-    func generateNextToken() throws -> NextToken {
-        // Stop before sampling if we've reached the context limit to avoid mutating sampler state
-        if currentTokenPosition >= Int32(maxTokenCount) {
-            return .endOfString
-        }
-        let newTokenId = sampler.sample(context: context)
-
-        if model.isEogToken(newTokenId) || currentTokenPosition >= Int32(maxTokenCount) {
-            return .endOfString
-        }
-
-        batch.reset()
-        batch.addToken(newTokenId, at: currentTokenPosition, logits: true)
-        processedTokens.append(newTokenId)
-
-        currentTokenPosition += 1
-        try context.decode(batch: batch)
-
-        return .token(model.piece(from: newTokenId, renderSpecial: renderSpecialTokens))
+    private func tokenizePrompt(_ text: String) -> [llama_token] {
+        let bos = model.string(from: model.bosToken())
+        let needsBos = model.shouldAddBos() && (bos.isEmpty || !text.hasPrefix(bos))
+        return model.tokenize(text: text, addBos: needsBos, special: true)
     }
 
-    func updateSamplingConfig(_ config: LlamaSamplingConfig) {
-        self.sampler = .init(config: config, model: model)
+    func generateNextToken() throws -> NextToken {
+        try Task.checkCancellation()
+        guard currentTokenPosition < Int32(maxTokenCount) else { return .endOfString }
+        guard let sampler else { throw LlamaError.invalidSamplingConfiguration }
+        let token = sampler.sample(context: context)
+        guard !model.isEogToken(token) else { return .endOfString }
+        batch.reset()
+        guard batch.addToken(token, at: currentTokenPosition, logits: true) else { throw LlamaError.invalidConfiguration }
+        do {
+            try context.decode(batch: batch)
+        } catch {
+            clear()
+            throw error
+        }
+        processedTokens.append(token)
+        currentTokenPosition += 1
+        return .token(textDecoder.append(model.pieceBytes(from: token, renderSpecial: renderSpecialTokens)))
+    }
+
+    func finishDecoding() -> String { textDecoder.finish() }
+
+    func updateSamplingConfig(_ config: LlamaSamplingConfig) throws {
+        let sampler = try LlamaSampler(config: config, model: model)
+        sampler.acceptPrompt(tokens: processedTokens)
+        self.sampler = sampler
     }
 
     func resetCompletion() {
@@ -230,11 +275,16 @@ final actor Llama {
         context.clearKVCache()
         processedTokens = []
         currentTokenPosition = 0
-        batch = .init(initialSize: Int32(config.batchSize))
+        sampler?.reset()
+        textDecoder.reset()
+        batch.reset()
     }
 
     private func processBatch() throws {
         try context.decode(batch: batch)
+        let count = Int(batch.size)
+        processedTokens.append(contentsOf: UnsafeBufferPointer(start: batch.rawBatch.token, count: count))
+        currentTokenPosition = Int32(processedTokens.count)
     }
 
     private func processPrompt(tokens: [llama_token], startIndex: Int) throws {
@@ -246,7 +296,6 @@ final actor Llama {
             let tokenPosition = startIndex + i
             let tokenId = tokens[i]
             batch.addToken(tokenId, at: Int32(tokenPosition), logits: false)
-            processedTokens.append(tokenId)
             // Keep the final batch, even when full, so it requests logits and is not decoded empty.
             if batch.size == config.batchSize && i + 1 < tokens.count {
                 try processBatch()

@@ -11,7 +11,10 @@ public final actor LlamaService {
 
     // MARK: Properties
     private var llama: Llama?
-    private var currentTask: Task<(), Error>?
+    private var generationID: UUID?
+    private var preparing = false
+    private var stopping = false
+    private var currentTask: Task<(), Never>?
     private let modelUrl: URL
     private let config: LlamaConfig
 
@@ -25,6 +28,9 @@ public final actor LlamaService {
     // MARK: Methods
 
     public func processMessages(_ messages: [LlamaChatMessage]) async throws {
+        guard !preparing, !stopping else { throw LlamaError.busy }
+        preparing = true
+        defer { preparing = false }
         let llama = try initializeLlamaIfNecessary()
         await stopCompletion()
         try await llama.initializeCompletion(messages: messages, addAssistant: false)
@@ -36,54 +42,10 @@ public final actor LlamaService {
     ///   - type: The `Codable` type to generate and decode.
     /// - Returns: A decoded instance of `T` produced by the model.
     public func respond<T: Codable>(to messages: [LlamaChatMessage], generating type: T.Type) async throws -> T {
-        func extractLikelyJSON(from text: String) -> String? {
-            // Find first opening brace or bracket
-            guard let startIndex = text.firstIndex(where: { $0 == "{" || $0 == "[" }) else { return nil }
-            let candidate = text[startIndex...]
-            // Simple balance-based termination (ignores strings/escapes, good enough for LLM output)
-            var depth: Int = 0
-            var closingIndex: String.Index?
-            for (i, ch) in candidate.enumerated() {
-                let idx = candidate.index(candidate.startIndex, offsetBy: i)
-                if ch == "{" || ch == "[" { depth += 1 }
-                else if ch == "}" || ch == "]" {
-                    depth -= 1
-                    if depth == 0 { closingIndex = idx; break }
-                }
-            }
-            if let closingIndex {
-                return String(candidate[...closingIndex])
-            }
-            return nil
-        }
-
-        var accumulated = ""
-        let decoder = JSONDecoder()
-        var decodedValue: T?
         let stream = try await streamCompletion(of: messages, generating: type)
-        do {
-            for try await token in stream {
-                accumulated += token
-                if let jsonText = extractLikelyJSON(from: accumulated),
-                   let data = jsonText.data(using: .utf8),
-                   let value = try? decoder.decode(T.self, from: data) {
-                    decodedValue = value
-                    break
-                }
-            }
-        } catch {
-            // Fall through to final decode attempt below
-        }
-        if let value = decodedValue {
-            await stopCompletion()
-            return value
-        }
-        // Final attempt with trimmed JSON if available, otherwise full text
-        let finalText = extractLikelyJSON(from: accumulated) ?? accumulated
-        guard let finalData = finalText.data(using: .utf8) else {
-            throw LlamaError.decodingError
-        }
-        return try decoder.decode(T.self, from: finalData)
+        var text = ""
+        for try await token in stream { text += token }
+        return try JSONDecoder().decode(T.self, from: Data(text.utf8))
     }
 
     /// Generate a plain text response using the provided sampling configuration.
@@ -113,16 +75,27 @@ public final actor LlamaService {
 
     public func streamCompletion(of messages: [LlamaChatMessage], samplingConfig: LlamaSamplingConfig) async throws -> AsyncThrowingStream<String, Error> {
         guard !messages.isEmpty else { throw LlamaError.emptyMessageArray }
+        guard !preparing, !stopping else { throw LlamaError.busy }
+        preparing = true
+        defer { preparing = false }
         let llama = try initializeLlamaIfNecessary()
         await stopCompletion()
-        try await  llama.initializeCompletion(messages: messages)
-        await llama.updateSamplingConfig(samplingConfig)
+        do {
+            try await llama.initializeCompletion(messages: messages)
+            try await llama.updateSamplingConfig(samplingConfig)
+        } catch {
+            await llama.resetCompletion()
+            throw error
+        }
+        let id = UUID()
+        generationID = id
 
         return AsyncThrowingStream { continuation in
-            currentTask = Task {
+            let task = Task {
+                defer { if generationID == id { currentTask = nil; generationID = nil } }
                 do {
                     generationLoop: while await (llama.currentTokenPosition < llama.maxTokenCount) {
-                        guard !Task.isCancelled else { break }
+                        try Task.checkCancellation()
                         let result = try await llama.generateNextToken()
                         switch result {
                         case .token(let token):
@@ -131,16 +104,26 @@ public final actor LlamaService {
                             break generationLoop
                         }
                     }
+                    let trailing = await llama.finishDecoding()
+                    if !trailing.isEmpty { continuation.yield(trailing) }
                     continuation.finish()
                 } catch {
+                    await llama.resetCompletion()
                     continuation.finish(throwing: error)
                 }
             }
+            currentTask = task
+            continuation.onTermination = { @Sendable _ in task.cancel() }
         }
     }
 
     public func stopCompletion() async {
-        await currentTask?.cancelAndWait()
+        stopping = true
+        let task = currentTask
+        await task?.cancelAndWait()
+        currentTask = nil
+        generationID = nil
+        stopping = false
     }
 
     private func initializeLlamaIfNecessary() throws -> Llama {

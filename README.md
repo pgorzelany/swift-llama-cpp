@@ -33,6 +33,23 @@ The download script verifies the fixture's SHA-256 before installing it. To run 
 GEMMA4_GGUF_PATH=/absolute/path/to/gemma-4.gguf swift test --filter GemmaCompatibilityTests
 ```
 
+## CPU and Metal configuration
+
+GPU remains the default. CPU mode disables layer, KQV and operation offload,
+and automatically uses the performance core count (with a conservative fallback).
+Prompt batch size, physical microbatch size and the two thread counts are independent:
+
+    let cpu = LlamaConfig(batchSize: 256, maxTokenCount: 4096, useGPU: false)
+    let gpu = LlamaConfig(
+        batchSize: 1024, maxTokenCount: 4096, useGPU: true,
+        microBatchSize: 256, nThreads: 1, nThreadsBatch: 1
+    )
+
+The second example shows configuration controls; the best batch depends on the
+workload. See [measured CPU/Metal results](Verification/PERFORMANCE.md) and
+[correctness fixes, regression coverage and API changes](Verification/README.md).
+The low-level sampler initializer now throws for invalid parameters or grammar.
+
 ## Coverage
 
 This wrapper covers:

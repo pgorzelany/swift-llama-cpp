@@ -7,7 +7,10 @@ public typealias LlamaPosition = llama_pos
 public final class LlamaMemory {
     let memory: llama_memory_t
 
-    init(memory: llama_memory_t) {
+    private let owner: LlamaContext
+
+    init(memory: llama_memory_t, owner: LlamaContext) {
+        self.owner = owner
         self.memory = memory
     }
 
@@ -85,6 +88,7 @@ public final class LlamaMemory {
         to p1: LlamaPosition,
         by d: Int32
     ) {
+        guard d > 1 else { return }
         llama_memory_seq_div(memory, sequenceId, p0, p1, d)
     }
 

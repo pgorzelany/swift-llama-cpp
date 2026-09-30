@@ -49,7 +49,7 @@ struct LlamaCacheReuseTests {
     }
 
     private func generate(_ engine: Llama, messages: [LlamaChatMessage]) async throws -> [String] {
-        await engine.updateSamplingConfig(.init(temperature: 0, seed: 0))
+        try await engine.updateSamplingConfig(.init(temperature: 0, seed: 0))
         try await engine.initializeCompletion(messages: messages)
         var tokens: [String] = []
         for _ in 0..<8 {

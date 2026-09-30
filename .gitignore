@@ -66,3 +66,6 @@ fastlane/screenshots/**/*.png
 fastlane/test_output
 *.gguf
 *.gguf.partial
+
+# Small synthetic adapter used by ownership regression tests.
+!Tests/SwiftLlamaTests/Resources/Fixtures/zero-rank1-llama-1b.gguf

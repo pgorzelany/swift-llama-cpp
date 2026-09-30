@@ -1,0 +1,99 @@
+BENCH_BACKEND load_tensors: offloaded 0/17 layers to GPU
+BENCH_BACKEND load_tensors:   CPU_Mapped model buffer size =   762.81 MiB
+BENCH_BACKEND load_tensors:   CPU_REPACK model buffer size =   762.55 MiB
+BENCH_BACKEND llama_context:        CPU  output buffer size =     0.49 MiB
+BENCH_BACKEND llama_kv_cache:        CPU KV buffer size =   128.00 MiB
+BENCH_BACKEND sched_reserve:        CPU compute buffer size =   129.25 MiB
+BENCH_BACKEND ~llama_context:       MTL0 compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+BENCH_BACKEND ~llama_context:        CPU compute buffer size is 129.2510 MiB, matches expectation of 129.2510 MiB
+BENCH_BACKEND ~llama_context:        CPU compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+BENCH_BACKEND load_tensors: offloaded 0/17 layers to GPU
+BENCH_BACKEND load_tensors:   CPU_Mapped model buffer size =   762.81 MiB
+BENCH_BACKEND load_tensors:   CPU_REPACK model buffer size =   762.55 MiB
+BENCH_BACKEND llama_context:        CPU  output buffer size =     0.49 MiB
+BENCH_BACKEND llama_kv_cache:        CPU KV buffer size =   128.00 MiB
+BENCH_BACKEND sched_reserve:        CPU compute buffer size =   129.25 MiB
+BENCH_BACKEND ~llama_context:       MTL0 compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+BENCH_BACKEND ~llama_context:        CPU compute buffer size is 129.2510 MiB, matches expectation of 129.2510 MiB
+BENCH_BACKEND ~llama_context:        CPU compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+BENCH_BACKEND load_tensors: offloaded 0/17 layers to GPU
+BENCH_BACKEND load_tensors:   CPU_Mapped model buffer size =   762.81 MiB
+BENCH_BACKEND load_tensors:   CPU_REPACK model buffer size =   762.55 MiB
+BENCH_BACKEND llama_context:        CPU  output buffer size =     0.49 MiB
+BENCH_BACKEND llama_kv_cache:        CPU KV buffer size =   128.00 MiB
+BENCH_BACKEND sched_reserve:        CPU compute buffer size =   129.25 MiB
+BENCH_BACKEND ~llama_context:       MTL0 compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+BENCH_BACKEND ~llama_context:        CPU compute buffer size is 129.2510 MiB, matches expectation of 129.2510 MiB
+BENCH_BACKEND ~llama_context:        CPU compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+BENCH_BACKEND load_tensors: offloaded 17/17 layers to GPU
+BENCH_BACKEND load_tensors:   CPU_Mapped model buffer size =   205.49 MiB
+BENCH_BACKEND load_tensors:  MTL0_Mapped model buffer size =   762.81 MiB
+BENCH_BACKEND llama_context:        CPU  output buffer size =     0.49 MiB
+BENCH_BACKEND llama_kv_cache:       MTL0 KV buffer size =   128.00 MiB
+BENCH_BACKEND sched_reserve:       MTL0 compute buffer size =   129.25 MiB
+BENCH_BACKEND sched_reserve:        CPU compute buffer size =     6.01 MiB
+BENCH_BACKEND ~llama_context:       MTL0 compute buffer size is 129.2500 MiB, matches expectation of 129.2500 MiB
+BENCH_BACKEND ~llama_context:        CPU compute buffer size is   6.0068 MiB, matches expectation of   6.0068 MiB
+BENCH_BACKEND ~llama_context:        CPU compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+BENCH_BACKEND load_tensors: offloaded 17/17 layers to GPU
+BENCH_BACKEND load_tensors:   CPU_Mapped model buffer size =   205.49 MiB
+BENCH_BACKEND load_tensors:  MTL0_Mapped model buffer size =   762.81 MiB
+BENCH_BACKEND llama_context:        CPU  output buffer size =     0.49 MiB
+BENCH_BACKEND llama_kv_cache:       MTL0 KV buffer size =   128.00 MiB
+BENCH_BACKEND sched_reserve:       MTL0 compute buffer size =   129.25 MiB
+BENCH_BACKEND sched_reserve:        CPU compute buffer size =     6.01 MiB
+BENCH_BACKEND ~llama_context:       MTL0 compute buffer size is 129.2500 MiB, matches expectation of 129.2500 MiB
+BENCH_BACKEND ~llama_context:        CPU compute buffer size is   6.0068 MiB, matches expectation of   6.0068 MiB
+BENCH_BACKEND ~llama_context:        CPU compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+BENCH_BACKEND load_tensors: offloaded 17/17 layers to GPU
+BENCH_BACKEND load_tensors:   CPU_Mapped model buffer size =   205.49 MiB
+BENCH_BACKEND load_tensors:  MTL0_Mapped model buffer size =   762.81 MiB
+BENCH_BACKEND llama_context:        CPU  output buffer size =     0.49 MiB
+BENCH_BACKEND llama_kv_cache:       MTL0 KV buffer size =   128.00 MiB
+BENCH_BACKEND sched_reserve:       MTL0 compute buffer size =   517.00 MiB
+BENCH_BACKEND sched_reserve:        CPU compute buffer size =    24.03 MiB
+BENCH_BACKEND ~llama_context:       MTL0 compute buffer size is 517.0000 MiB, matches expectation of 517.0000 MiB
+BENCH_BACKEND ~llama_context:        CPU compute buffer size is  24.0273 MiB, matches expectation of  24.0273 MiB
+BENCH_BACKEND ~llama_context:        CPU compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+BENCH_BACKEND load_tensors: offloaded 17/17 layers to GPU
+BENCH_BACKEND load_tensors:   CPU_Mapped model buffer size =   205.49 MiB
+BENCH_BACKEND load_tensors:  MTL0_Mapped model buffer size =   762.81 MiB
+BENCH_BACKEND llama_context:        CPU  output buffer size =     0.49 MiB
+BENCH_BACKEND llama_kv_cache:       MTL0 KV buffer size =   128.00 MiB
+BENCH_BACKEND sched_reserve:       MTL0 compute buffer size =   129.25 MiB
+BENCH_BACKEND sched_reserve:        CPU compute buffer size =     6.01 MiB
+BENCH_BACKEND ~llama_context:       MTL0 compute buffer size is 129.2500 MiB, matches expectation of 129.2500 MiB
+BENCH_BACKEND ~llama_context:        CPU compute buffer size is   6.0068 MiB, matches expectation of   6.0068 MiB
+BENCH_BACKEND ~llama_context:        CPU compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+BENCH_BACKEND load_tensors: offloaded 0/17 layers to GPU
+BENCH_BACKEND load_tensors:   CPU_Mapped model buffer size =   652.25 MiB
+BENCH_BACKEND load_tensors:   CPU_REPACK model buffer size =   660.75 MiB
+BENCH_BACKEND llama_context:        CPU  output buffer size =     0.25 MiB
+BENCH_BACKEND llama_kv_cache:        CPU KV buffer size =    48.00 MiB
+BENCH_BACKEND llama_memory_recurrent:        CPU RS buffer size =     0.16 MiB
+BENCH_BACKEND sched_reserve:        CPU compute buffer size =    72.01 MiB
+BENCH_BACKEND ~llama_context:       MTL0 compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+BENCH_BACKEND ~llama_context:        CPU compute buffer size is  72.0069 MiB, matches expectation of  72.0069 MiB
+BENCH_BACKEND ~llama_context:        CPU compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+BENCH_BACKEND load_tensors: offloaded 17/17 layers to GPU
+BENCH_BACKEND load_tensors:   CPU_Mapped model buffer size =   105.00 MiB
+BENCH_BACKEND load_tensors:  MTL0_Mapped model buffer size =   661.25 MiB
+BENCH_BACKEND llama_context:        CPU  output buffer size =     0.25 MiB
+BENCH_BACKEND llama_kv_cache:       MTL0 KV buffer size =    48.00 MiB
+BENCH_BACKEND llama_memory_recurrent:       MTL0 RS buffer size =     0.16 MiB
+BENCH_BACKEND sched_reserve:       MTL0 compute buffer size =    76.02 MiB
+BENCH_BACKEND sched_reserve:        CPU compute buffer size =     6.01 MiB
+BENCH_BACKEND ~llama_context:       MTL0 compute buffer size is  76.0215 MiB, matches expectation of  76.0215 MiB
+BENCH_BACKEND ~llama_context:        CPU compute buffer size is   6.0069 MiB, matches expectation of   6.0069 MiB
+BENCH_BACKEND ~llama_context:        CPU compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+BENCH_BACKEND load_tensors: offloaded 17/17 layers to GPU
+BENCH_BACKEND load_tensors:   CPU_Mapped model buffer size =   105.00 MiB
+BENCH_BACKEND load_tensors:  MTL0_Mapped model buffer size =   661.25 MiB
+BENCH_BACKEND llama_context:        CPU  output buffer size =     0.25 MiB
+BENCH_BACKEND llama_kv_cache:       MTL0 KV buffer size =    48.00 MiB
+BENCH_BACKEND llama_memory_recurrent:       MTL0 RS buffer size =     0.16 MiB
+BENCH_BACKEND sched_reserve:       MTL0 compute buffer size =    76.02 MiB
+BENCH_BACKEND sched_reserve:        CPU compute buffer size =     6.01 MiB
+BENCH_BACKEND ~llama_context:       MTL0 compute buffer size is  76.0215 MiB, matches expectation of  76.0215 MiB
+BENCH_BACKEND ~llama_context:        CPU compute buffer size is   6.0069 MiB, matches expectation of   6.0069 MiB
+BENCH_BACKEND ~llama_context:        CPU compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB

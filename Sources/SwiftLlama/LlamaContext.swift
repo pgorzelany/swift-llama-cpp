@@ -62,9 +62,10 @@ public final class LlamaContext {
 
     public let model: LlamaModel
     var memory: LlamaMemory {
-        LlamaMemory(memory: llama_get_memory(contextPointer))
+        LlamaMemory(memory: llama_get_memory(contextPointer), owner: self)
     }
     let contextPointer: OpaquePointer
+    private var appliedAdapters: [LlamaLoraAdapter] = []
     private var abortBox: Unmanaged<AbortBox>?
 
     // MARK: - Lifecycle
@@ -78,8 +79,10 @@ public final class LlamaContext {
     }
 
     deinit {
-        if let box = abortBox { box.release() }
+        llama_set_abort_callback(contextPointer, nil, nil)
+        synchronize()
         llama_free(contextPointer)
+        if let box = abortBox { box.release() }
     }
 
     // MARK: - Methods
@@ -163,12 +166,22 @@ public final class LlamaContext {
     /// Return the logits for the last token.
     public func lastLogits() -> [Float]? { logits(at: -1) }
 
+    /// Restores the output buffer omitted by llama.cpp's memory serialization.
+    func restoreLastLogits(_ logits: [Float]) -> Bool {
+        guard logits.count == Int(model.vocabularySize()),
+              let output = llama_get_logits_ith(contextPointer, -1) else { return false }
+        logits.withUnsafeBufferPointer { buffer in
+            output.update(from: buffer.baseAddress!, count: buffer.count)
+        }
+        return true
+    }
+
     /// Return the embeddings for the i-th token from the last decode/encode call.
     /// - Parameter index: Use -1 for the last embedding.
     /// - Returns: A copy of the embedding vector.
     public func embeddings(at index: Int32) -> [Float]? {
         guard let ptr = llama_get_embeddings_ith(contextPointer, index) else { return nil }
-        let n = Int(model.nEmbed())
+        let n = Int(model.nEmbedOutput())
         var out = [Float](repeating: 0, count: n)
         out.withUnsafeMutableBufferPointer { dst in
             dst.baseAddress!.update(from: ptr, count: n)
@@ -185,7 +198,7 @@ public final class LlamaContext {
         if pooling == LLAMA_POOLING_TYPE_RANK {
             n = Int(model.nClassifierOutputs())
         } else {
-            n = Int(model.nEmbed())
+            n = Int(model.nEmbedOutput())
         }
         var out = [Float](repeating: 0, count: n)
         out.withUnsafeMutableBufferPointer { dst in
@@ -201,6 +214,7 @@ public final class LlamaContext {
     // MARK: - Controls
 
     public func setThreads(nThreads: Int32, nThreadsBatch: Int32) {
+        guard nThreads > 0, nThreadsBatch > 0 else { return }
         llama_set_n_threads(contextPointer, nThreads, nThreadsBatch)
     }
 
@@ -213,7 +227,8 @@ public final class LlamaContext {
 
     // Abort callback bridging
     public func setAbortCallback(_ callback: @escaping () -> Bool) {
-        // release previous
+        llama_set_abort_callback(contextPointer, nil, nil)
+        synchronize()
         if let box = abortBox { box.release(); abortBox = nil }
         let newBox = Unmanaged.passRetained(AbortBox(cb: callback))
         abortBox = newBox
@@ -228,6 +243,7 @@ public final class LlamaContext {
     ///   - scale: The scaling factor for the adapter's influence.
     /// - Throws: `LlamaContextError.loraAdapterFailed` if the operation fails.
     public func apply(loraAdapter: LlamaLoraAdapter, scale: Float = 1.0) throws {
+        guard loraAdapter.model === model else { throw LlamaContextError.loraAdapterFailed("Adapter belongs to a different model.") }
         var adapterPtr: OpaquePointer? = loraAdapter.adapterPointer
         var scaleValue = scale
         let result = withUnsafeMutablePointer(to: &adapterPtr) { ptr in
@@ -236,11 +252,12 @@ public final class LlamaContext {
         if result != 0 {
             throw LlamaContextError.loraAdapterFailed("Failed to apply LoRA adapter.")
         }
+        appliedAdapters = [loraAdapter]
     }
 
     /// Removes all LoRA adapters from the context.
     public func removeAllLoraAdapters() {
-        llama_set_adapters_lora(contextPointer, nil, 0, nil)
+        if llama_set_adapters_lora(contextPointer, nil, 0, nil) == 0 { appliedAdapters = [] }
     }
 
     /// Applies a control vector to the context.
@@ -280,6 +297,7 @@ public final class LlamaContext {
 
     public func stateSize() -> Int { Int(llama_state_get_size(contextPointer)) }
 
+    /// Backend memory snapshot; sampler history and output logits are not included.
     public func saveState() -> Data {
         let size = stateSize()
         var buffer = Data(count: size)
@@ -298,7 +316,7 @@ public final class LlamaContext {
             guard let base = raw.baseAddress?.assumingMemoryBound(to: UInt8.self) else { return 0 }
             return llama_state_set_data(contextPointer, base, size_t(data.count))
         }
-        return read > 0
+        return !data.isEmpty && read == data.count
     }
 
     public func saveSession(to path: String, tokens: [llama_token]) -> Bool {
@@ -308,12 +326,13 @@ public final class LlamaContext {
     }
 
     public func loadSession(from path: String, capacity: Int) -> (tokens: [llama_token], count: Int)? {
+        guard capacity >= 0 else { return nil }
         var tokens = [llama_token](repeating: 0, count: capacity)
         var outCount: size_t = 0
         let ok = tokens.withUnsafeMutableBufferPointer { buf in
             llama_state_load_file(contextPointer, path, buf.baseAddress, size_t(capacity), &outCount)
         }
-        if ok { return (Array(tokens.prefix(Int(outCount))), Int(outCount)) }
+        if ok && outCount <= capacity { return (Array(tokens.prefix(Int(outCount))), Int(outCount)) }
         return nil
     }
 
@@ -332,12 +351,13 @@ public final class LlamaContext {
     }
 
     @discardableResult
+    /// The legacy seqId argument is unused by C; data is restored into destSeqId.
     public func loadStateForSequence(_ seqId: llama_seq_id, data: Data, destSeqId: llama_seq_id) -> Bool {
         let read = data.withUnsafeBytes { raw -> size_t in
             guard let base = raw.baseAddress?.assumingMemoryBound(to: UInt8.self) else { return 0 }
             return llama_state_seq_set_data(contextPointer, base, size_t(data.count), destSeqId)
         }
-        return read > 0
+        return !data.isEmpty && read == data.count
     }
 
     // MARK: - Performance
@@ -359,18 +379,19 @@ public final class LlamaContext {
     /// Load a single sequence state from file into the specified destination sequence id.
     /// - Returns: Loaded tokens and count if successful, otherwise nil.
     public func loadSequenceState(from filepath: String, destSeqId: llama_seq_id, capacity: Int) -> (tokens: [llama_token], count: Int)? {
+        guard capacity >= 0 else { return nil }
         var tokens = [llama_token](repeating: 0, count: capacity)
         var outCount: size_t = 0
         let ok = tokens.withUnsafeMutableBufferPointer { buf in
             llama_state_seq_load_file(contextPointer, filepath, destSeqId, buf.baseAddress, size_t(capacity), &outCount) > 0
         }
-        if ok { return (Array(tokens.prefix(Int(outCount))), Int(outCount)) }
+        if ok && outCount <= capacity { return (Array(tokens.prefix(Int(outCount))), Int(outCount)) }
         return nil
     }
 
     // MARK: - Threadpool
 
-    /// Attach the default ggml auto threadpool to this context.
+    /// Uses the ggml fallback pool by detaching explicit threadpools.
     public func attachAutoThreadpool() { llama_attach_threadpool(contextPointer, nil, nil) }
 
     /// Detach any threadpools from this context.

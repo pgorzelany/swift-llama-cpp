@@ -31,10 +31,11 @@ struct LlamaAuditProbes {
             if needed < -64 { longPieces.append((token, -needed)) }
         }
         print("AUDIT_LONG_PIECES count=\(longPieces.count) examples=\(longPieces.prefix(5))")
-        let sampler = LlamaSampler(config: .init(temperature: 0.7, seed: 42, topK: 40), model: model)
+        let sampler = try LlamaSampler(config: .init(temperature: 0.7, seed: 42, topK: 40), model: model)
         print("AUDIT_SAMPLER_ORDER \((0..<sampler.count()).map { sampler.name(at: Int32($0)) })")
-        let invalidGrammar = LlamaSampler(config: .init(temperature: 0, seed: 42, grammarConfig: .init(grammar: "invalid")), model: model)
-        print("AUDIT_INVALID_GRAMMAR \((0..<invalidGrammar.count()).map { invalidGrammar.name(at: Int32($0)) })")
+        #expect(throws: (any Error).self) {
+            _ = try LlamaSampler(config: .init(temperature: 0, seed: 42, grammarConfig: .init(grammar: "invalid")), model: model)
+        }
         let longText = String(repeating: "x ", count: Int(model.trainedContextSize()) + 10)
         let required = llama_tokenize(model.vocabPointer, longText, Int32(longText.utf8.count), nil, 0, false, false)
         print("AUDIT_LONG_TOKENIZE required=\(-required) wrapperPasses=\(model.trainedContextSize()) actualAllocation=\(longText.utf8.count + 1)")

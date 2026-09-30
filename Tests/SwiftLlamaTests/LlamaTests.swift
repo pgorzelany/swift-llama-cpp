@@ -12,7 +12,7 @@ struct LlamaTests {
             config: .init(batchSize: 256, maxTokenCount: 2048)
         )
 
-        await sut.updateSamplingConfig(.init(temperature: 0.7, seed: 0))
+        try await sut.updateSamplingConfig(.init(temperature: 0.7, seed: 0))
         try await sut.initializeCompletion(messages: [LlamaChatMessage(role: .system, content: "Tell me a very long story about mars colonization")])
 
         let numberOfTokensToGenerate = 50

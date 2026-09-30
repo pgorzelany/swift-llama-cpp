@@ -13,6 +13,7 @@ public final class LlamaLoraAdapter {
 
     // MARK: - Properties
 
+    let model: LlamaModel
     let adapterPointer: OpaquePointer
 
     // MARK: - Lifecycle
@@ -26,7 +27,10 @@ public final class LlamaLoraAdapter {
         guard let adapterPointer = llama_adapter_lora_init(model.modelPointer, path) else {
             throw LlamaLoraError.couldNotLoadAdapter
         }
+        self.model = model
         self.adapterPointer = adapterPointer
     }
+
+    deinit { llama_adapter_lora_free(adapterPointer) }
 
 }

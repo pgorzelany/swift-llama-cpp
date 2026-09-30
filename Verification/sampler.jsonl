@@ -1,0 +1,16 @@
+{"implementation":"legacy","seconds":1.178713958,"repetition":0,"samples":200}
+{"implementation":"greedy","seconds":0.01270325,"repetition":0,"samples":200}
+{"implementation":"greedy","seconds":0.012404958,"repetition":1,"samples":200}
+{"implementation":"legacy","seconds":1.173017958,"repetition":1,"samples":200}
+{"implementation":"legacy","seconds":1.177477417,"repetition":2,"samples":200}
+{"implementation":"greedy","seconds":0.011813167,"repetition":2,"samples":200}
+{"implementation":"greedy","seconds":0.011698959,"repetition":3,"samples":200}
+{"implementation":"legacy","seconds":1.171035583,"repetition":3,"samples":200}
+{"implementation":"legacy","seconds":1.1648583750000001,"repetition":4,"samples":200}
+{"implementation":"greedy","seconds":0.012269417,"repetition":4,"samples":200}
+{"implementation":"greedy","seconds":0.01214175,"repetition":5,"samples":200}
+{"implementation":"legacy","seconds":1.172727125,"repetition":5,"samples":200}
+{"implementation":"legacy","seconds":1.1844245,"repetition":6,"samples":200}
+{"implementation":"greedy","seconds":0.011794667,"repetition":6,"samples":200}
+{"implementation":"greedy","seconds":0.011769083,"repetition":7,"samples":200}
+{"implementation":"legacy","seconds":1.167051458,"repetition":7,"samples":200}

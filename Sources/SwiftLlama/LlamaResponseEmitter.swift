@@ -20,10 +20,11 @@ struct LlamaResponseEmitter {
     private var hasAnswer = false
     private var answerID: String { "\(generationID)-answer" }
 
-    mutating func append(_ text: String) async throws {
+    mutating func append(_ text: String, countingToken: Bool = true) async throws {
+        guard countingToken || !text.isEmpty else { return }
         rawOutput += text
-        tokenCount += 1
-        if firstTokenTime == nil { firstTokenTime = start.duration(to: .now).llamaSeconds }
+        if countingToken { tokenCount += 1 }
+        if firstTokenTime == nil && !text.isEmpty { firstTokenTime = start.duration(to: .now).llamaSeconds }
         let visible = parsesTools ? try toolParser.append(text) : text
         await send(parser.append(visible))
         await publishMetadata(finished: false)

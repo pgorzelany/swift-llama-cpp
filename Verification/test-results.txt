@@ -1,0 +1,27 @@
+2026-09-30: final verification.
+Runtime b10964; Mac M1 Max 64GB; iOS 27 Simulator iPhone 17 Pro.
+Mac full run includes LFM, Gemma and native adapter fixture.
+Only opt-in performance suites skipped in correctness runs; benchmarks run separately.
+Address Sanitizer instruments Swift; prebuilt C/C++ binary not fully instrumented.
+
+mac-qualified
+􁁛  Test run with 119 tests in 21 suites passed after 182.481 seconds.
+
+mac-address-sanitizer
+􁁛  Test run with 21 tests in 4 suites passed after 22.102 seconds.
+
+ios-simulator
+✔ Test run with 35 tests in 5 suites passed after 116.892 seconds.
+** TEST SUCCEEDED ** [122.954 sec]
+
+cpu-metal-llama-release
+􁁛  Test run with 1 test in 1 suite passed after 712.555 seconds.
+
+cpu-metal-lfm-release
+􁁛  Test run with 1 test in 1 suite passed after 86.225 seconds.
+
+greedy-sampler-release
+􁁛  Test run with 1 test in 1 suite passed after 11.383 seconds.
+
+App build macOS: exit 0.
+App build iOS Simulator: exit 0.

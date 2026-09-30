@@ -7,10 +7,16 @@ import Synchronization
 @available(iOS 27.0, macOS 27.0, *)
 protocol LlamaExecutorEngine: Actor {
     func prepare(_ messages: [LlamaChatMessage], addingAssistant: Bool) async throws -> Int
-    func updateSamplingConfig(_ config: LlamaSamplingConfig) async
+    func updateSamplingConfig(_ config: LlamaSamplingConfig) async throws
     func generateNextToken() async throws -> NextToken
+    func finishDecoding() async -> String
     func resetCompletion() async
     func contextUsage(_ messages: [LlamaChatMessage], addingAssistant: Bool) async throws -> LlamaContextUsage
+}
+
+@available(iOS 27.0, macOS 27.0, *)
+extension LlamaExecutorEngine {
+    func finishDecoding() -> String { "" }
 }
 
 @available(iOS 27.0, macOS 27.0, *)
@@ -121,7 +127,7 @@ final class LlamaExecutorRuntime: Sendable {
                     let start = ContinuousClock.now
                     let inputTokens = try await engine.prepare(messages, addingAssistant: true)
                     try Task.checkCancellation()
-                    await engine.updateSamplingConfig(sampling)
+                    try await engine.updateSamplingConfig(sampling)
                     var output = LlamaResponseEmitter(requestID: request.id, inputTokens: inputTokens, start: start, channel: channel)
                     output.parsesTools = messages.contains(where: \.usesLFMToolTemplate)
                     output.toolDefinitions = request.generationOptions.toolCallingMode == .disallowed ? [] : request.enabledToolDefinitions
@@ -133,6 +139,7 @@ final class LlamaExecutorRuntime: Sendable {
                         try await output.append(text)
                     }
                     try Task.checkCancellation()
+                    try await output.append(await engine.finishDecoding(), countingToken: false)
                     try await output.finish()
                 } catch {
                     await engine.resetCompletion()
