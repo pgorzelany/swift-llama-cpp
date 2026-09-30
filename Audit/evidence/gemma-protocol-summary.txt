@@ -1,0 +1,3 @@
+AUDIT_VOCAB_ONLY contextTrain=0 actualTokens=5
+AUDIT_GEMMA_PROTOCOL tokens=[100, 45518, 107, 21817, 101] hidden="<|channel>thought\nPlan<channel|>" visible="<|channel>thought\nPlan<channel|>"
+􁁛  Test run with 1 test in 1 suite passed after 0.489 seconds.

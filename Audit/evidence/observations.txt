@@ -1,0 +1,12 @@
+AUDIT_BOS native=true wrapper=false bos=128000 first=128006
+AUDIT_TEXT "Zażółć gęślą jaźń 🎯🚀🔥" pieces="Zażółć gęślą jaźń" detokenize="Zażółć gęślą jaźń 🎯🚀🔥"
+AUDIT_TEXT "中文 العربية हिन्दी русский" pieces="中文 العربية हिन्दी русский" detokenize="中文 العربية हिन्दी русский"
+AUDIT_TEXT "abc\0def" pieces="abcdef" detokenize="abc"
+AUDIT_LONG_PIECES count=123 examples=[(5713, 72), (8633, 65), (10089, 66), (10757, 73), (11624, 73)]
+AUDIT_SAMPLER_ORDER ["top-k", "top-p", "penalties", "temp", "dist"]
+AUDIT_INVALID_GRAMMAR ["top-p", "penalties", "temp", "dist"]
+AUDIT_LONG_TOKENIZE required=131083 wrapperPasses=131072 actualAllocation=262165
+AUDIT_EXACT_PROMPT logitsBefore=128256 logitsAfter=128256 equal=true
+AUDIT_STREAMING tokens=1000 elapsed=0.041250916 seconds
+AUDIT_STREAMING tokens=4000 elapsed=0.163019375 seconds
+AUDIT_STREAMING tokens=8000 elapsed=0.392760958 seconds

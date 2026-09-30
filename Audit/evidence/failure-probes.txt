@@ -1,0 +1,16 @@
+probe=long-piece
+Unexpected signal code 5
+AUDIT_LONG_PIECE token=5713
+Swift/Range.swift:761: Fatal error: Range requires lowerBound <= upperBound
+probe=long-tokenize
+Unexpected signal code 5
+Swift/Range.swift:761: Fatal error: Range requires lowerBound <= upperBound
+probe=borrowed-batch
+Unexpected signal code 6
+AUDIT_BORROWED_BATCH size=3
+probe=eos-pointer
+AUDIT_EOS wrapper=-256782208 correct=128009
+probe=vocab-only-tokenize
+Unexpected signal code 5
+AUDIT_VOCAB_ONLY_CRASH contextTrain=0
+Swift/Range.swift:761: Fatal error: Range requires lowerBound <= upperBound

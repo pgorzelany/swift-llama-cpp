@@ -1,0 +1,7 @@
+backend_requested,attach_ok,chain,repeat,sampled_token_available,sampled_logits_count,sampled_probs_count,pp_tps,tg_tps
+0,0,"chain",0,0,128256,0,2363.924,165.713
+0,0,"chain",1,0,128256,0,2359.299,166.005
+0,0,"chain",2,0,128256,0,2365.197,166.993
+1,1,"chain",0,1,128256,128256,2342.176,118.309
+1,1,"chain",1,1,128256,128256,2340.010,119.445
+1,1,"chain",2,1,128256,128256,2339.072,118.755

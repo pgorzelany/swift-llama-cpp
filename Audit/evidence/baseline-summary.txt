@@ -1,0 +1,23 @@
+Test Suite 'All tests' passed at 2026-09-30 17:31:21.435.
+􀟈  Test run started.
+􀙟  Test "Gemma 4 loads and follows a text instruction" skipped.
+􁁛  Suite "Gemma compatibility" passed after 0.001 seconds.
+􁁛  Suite LlamaBackendTests passed after 0.082 seconds.
+􁁛  Suite "Model behavior" passed after 23.437 seconds.
+􀙟  Suite "Prompt cache reuse" skipped: "Set ENCLAVE_GGUF_TEST_MODEL to an instruction-tuned GGUF fixture"
+􀙟  Test "Repeating a shortened prompt matches a clean context" skipped: "Set ENCLAVE_GGUF_TEST_MODEL to an instruction-tuned GGUF fixture"
+􀙟  Test "A changed suffix matches full reprocessing" skipped: "Set ENCLAVE_GGUF_TEST_MODEL to an instruction-tuned GGUF fixture"
+􁁛  Suite LlamaContextTests passed after 1.143 seconds.
+􁁛  Suite "Llama diagnostics" passed after 0.001 seconds.
+LLAMA_NATIVE_SESSION_1000_TOKENS 0.040782583 seconds
+LLAMA_NATIVE_GGUF_OUTPUT Paris ELAPSED 0.258619417 seconds TOKENS 1
+􁁛  Suite LlamaLanguageModelTests passed after 0.385 seconds.
+􁁛  Suite LlamaModelTests passed after 2.225 seconds.
+􁁛  Suite LlamaSamplerTests passed after 0.230 seconds.
+􁁛  Suite LlamaServiceTests passed after 176.851 seconds.
+􁁛  Suite LlamaTests passed after 0.818 seconds.
+􁁛  Suite LlamaToolCallingTests passed after 0.041 seconds.
+􀙟  Test "Shipped LFM calls exact arguments, uses results, avoids unrelated calls and recovers from an error" skipped.
+􁁛  Suite LlamaToolCallingIntegrationTests passed after 0.001 seconds.
+􁁛  Suite LlamaTypedGrammarTests passed after 0.457 seconds.
+􁁛  Test run with 91 tests in 14 suites passed after 205.676 seconds.

@@ -1,0 +1,22 @@
+Test Suite 'SwiftLlamaTests.xctest' passed at 2026-09-30 18:17:20.220.
+Test Suite 'Selected tests' passed at 2026-09-30 18:17:20.220.
+◇ Test run started.
+AUDIT_BOS native=true wrapper=false bos=128000 first=128006
+AUDIT_TEXT "Zażółć gęślą jaźń 🎯🚀🔥" pieces="Zażółć gęślą jaźń" detokenize="Zażółć gęślą jaźń 🎯🚀🔥"
+AUDIT_TEXT "中文 العربية हिन्दी русский" pieces="中文 العربية हिन्दी русский" detokenize="中文 العربية हिन्दी русский"
+AUDIT_TEXT "abc\0def" pieces="abcdef" detokenize="abc"
+AUDIT_LONG_PIECES count=123 examples=[(5713, 72), (8633, 65), (10089, 66), (10757, 73), (11624, 73)]
+AUDIT_SAMPLER_ORDER ["top-k", "top-p", "penalties", "temp", "dist"]
+AUDIT_INVALID_GRAMMAR ["top-p", "penalties", "temp", "dist"]
+AUDIT_LONG_TOKENIZE required=131083 wrapperPasses=131072 actualAllocation=262165
+AUDIT_EXACT_PROMPT logitsBefore=128256 logitsAfter=128256 equal=true
+AUDIT_STREAMING tokens=1000 elapsed=0.071208792 seconds
+AUDIT_STREAMING tokens=4000 elapsed=0.20038475 seconds
+AUDIT_STREAMING tokens=8000 elapsed=0.460699167 seconds
+✔ Suite "llama.cpp audit probes" passed after 9.353 seconds.
+LLAMA_NATIVE_SESSION_1000_TOKENS 0.043431209 seconds
+LLAMA_NATIVE_GGUF_OUTPUT Paris ELAPSED 8.879037624999999 seconds TOKENS 1
+✔ Suite LlamaLanguageModelTests passed after 9.064 seconds.
+✔ Suite LlamaToolCallingTests passed after 0.093 seconds.
+✔ Test run with 32 tests in 3 suites passed after 18.512 seconds.
+** TEST SUCCEEDED ** [28.778 sec]
