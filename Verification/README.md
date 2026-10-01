@@ -86,3 +86,7 @@ Nie zmieniono asercji wymagających poprawnego stanu, JSON lub tekstu Unicode.
 ## Benchmark
 
 Instrukcje i wyniki: [PERFORMANCE.md](PERFORMANCE.md).
+
+Bezpośrednie GPU before/after: [GPU-BEFORE-AFTER.md](GPU-BEFORE-AFTER.md).
+Kontrolowane greedy zyskuje; domyślny sampler produkcyjny jest wolniejszy
+w części workloadów. Raport zawiera pełne dane i zakres porównania.

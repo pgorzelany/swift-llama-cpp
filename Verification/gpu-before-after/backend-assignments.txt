@@ -1,0 +1,160 @@
+RUN lfm-1.2b-after-0.log
+ggml_metal_device_init: GPU name:   MTL0 (Apple M1 Max)
+AB_BACKEND load_tensors: offloaded 17/17 layers to GPU
+AB_BACKEND load_tensors:   CPU_Mapped model buffer size =   105.00 MiB
+AB_BACKEND load_tensors:  MTL0_Mapped model buffer size =   661.25 MiB
+AB_BACKEND llama_context: flash_attn            = auto
+AB_BACKEND llama_kv_cache:       MTL0 KV buffer size =    48.00 MiB
+AB_BACKEND ~llama_context:       MTL0 compute buffer size is 304.0391 MiB, matches expectation of 304.0391 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is  24.0274 MiB, matches expectation of  24.0274 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+RUN lfm-1.2b-after-1.log
+ggml_metal_device_init: GPU name:   MTL0 (Apple M1 Max)
+AB_BACKEND load_tensors: offloaded 17/17 layers to GPU
+AB_BACKEND load_tensors:   CPU_Mapped model buffer size =   105.00 MiB
+AB_BACKEND load_tensors:  MTL0_Mapped model buffer size =   661.25 MiB
+AB_BACKEND llama_context: flash_attn            = auto
+AB_BACKEND llama_kv_cache:       MTL0 KV buffer size =    48.00 MiB
+AB_BACKEND ~llama_context:       MTL0 compute buffer size is 304.0391 MiB, matches expectation of 304.0391 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is  24.0274 MiB, matches expectation of  24.0274 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+RUN lfm-1.2b-after-2.log
+ggml_metal_device_init: GPU name:   MTL0 (Apple M1 Max)
+AB_BACKEND load_tensors: offloaded 17/17 layers to GPU
+AB_BACKEND load_tensors:   CPU_Mapped model buffer size =   105.00 MiB
+AB_BACKEND load_tensors:  MTL0_Mapped model buffer size =   661.25 MiB
+AB_BACKEND llama_context: flash_attn            = auto
+AB_BACKEND llama_kv_cache:       MTL0 KV buffer size =    48.00 MiB
+AB_BACKEND ~llama_context:       MTL0 compute buffer size is 304.0391 MiB, matches expectation of 304.0391 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is  24.0274 MiB, matches expectation of  24.0274 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+RUN lfm-1.2b-after-3.log
+ggml_metal_device_init: GPU name:   MTL0 (Apple M1 Max)
+AB_BACKEND load_tensors: offloaded 17/17 layers to GPU
+AB_BACKEND load_tensors:   CPU_Mapped model buffer size =   105.00 MiB
+AB_BACKEND load_tensors:  MTL0_Mapped model buffer size =   661.25 MiB
+AB_BACKEND llama_context: flash_attn            = auto
+AB_BACKEND llama_kv_cache:       MTL0 KV buffer size =    48.00 MiB
+AB_BACKEND ~llama_context:       MTL0 compute buffer size is 304.0391 MiB, matches expectation of 304.0391 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is  24.0274 MiB, matches expectation of  24.0274 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+RUN lfm-1.2b-before-0.log
+ggml_metal_device_init: GPU name:   MTL0 (Apple M1 Max)
+AB_BACKEND load_tensors: offloaded 17/17 layers to GPU
+AB_BACKEND load_tensors:   CPU_Mapped model buffer size =   105.00 MiB
+AB_BACKEND load_tensors:  MTL0_Mapped model buffer size =   661.25 MiB
+AB_BACKEND llama_context: flash_attn            = auto
+AB_BACKEND llama_kv_cache:       MTL0 KV buffer size =    48.00 MiB
+AB_BACKEND ~llama_context:       MTL0 compute buffer size is 304.0391 MiB, matches expectation of 304.0391 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is  24.0274 MiB, matches expectation of  24.0274 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+RUN lfm-1.2b-before-1.log
+ggml_metal_device_init: GPU name:   MTL0 (Apple M1 Max)
+AB_BACKEND load_tensors: offloaded 17/17 layers to GPU
+AB_BACKEND load_tensors:   CPU_Mapped model buffer size =   105.00 MiB
+AB_BACKEND load_tensors:  MTL0_Mapped model buffer size =   661.25 MiB
+AB_BACKEND llama_context: flash_attn            = auto
+AB_BACKEND llama_kv_cache:       MTL0 KV buffer size =    48.00 MiB
+AB_BACKEND ~llama_context:       MTL0 compute buffer size is 304.0391 MiB, matches expectation of 304.0391 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is  24.0274 MiB, matches expectation of  24.0274 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+RUN lfm-1.2b-before-2.log
+ggml_metal_device_init: GPU name:   MTL0 (Apple M1 Max)
+AB_BACKEND load_tensors: offloaded 17/17 layers to GPU
+AB_BACKEND load_tensors:   CPU_Mapped model buffer size =   105.00 MiB
+AB_BACKEND load_tensors:  MTL0_Mapped model buffer size =   661.25 MiB
+AB_BACKEND llama_context: flash_attn            = auto
+AB_BACKEND llama_kv_cache:       MTL0 KV buffer size =    48.00 MiB
+AB_BACKEND ~llama_context:       MTL0 compute buffer size is 304.0391 MiB, matches expectation of 304.0391 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is  24.0274 MiB, matches expectation of  24.0274 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+RUN lfm-1.2b-before-3.log
+ggml_metal_device_init: GPU name:   MTL0 (Apple M1 Max)
+AB_BACKEND load_tensors: offloaded 17/17 layers to GPU
+AB_BACKEND load_tensors:   CPU_Mapped model buffer size =   105.00 MiB
+AB_BACKEND load_tensors:  MTL0_Mapped model buffer size =   661.25 MiB
+AB_BACKEND llama_context: flash_attn            = auto
+AB_BACKEND llama_kv_cache:       MTL0 KV buffer size =    48.00 MiB
+AB_BACKEND ~llama_context:       MTL0 compute buffer size is 304.0391 MiB, matches expectation of 304.0391 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is  24.0274 MiB, matches expectation of  24.0274 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+RUN llama-1b-after-0.log
+ggml_metal_device_init: GPU name:   MTL0 (Apple M1 Max)
+AB_BACKEND load_tensors: offloaded 17/17 layers to GPU
+AB_BACKEND load_tensors:   CPU_Mapped model buffer size =   205.49 MiB
+AB_BACKEND load_tensors:  MTL0_Mapped model buffer size =   762.81 MiB
+AB_BACKEND llama_context: flash_attn            = auto
+AB_BACKEND llama_kv_cache:       MTL0 KV buffer size =   128.00 MiB
+AB_BACKEND ~llama_context:       MTL0 compute buffer size is 517.0000 MiB, matches expectation of 517.0000 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is  24.0273 MiB, matches expectation of  24.0273 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+RUN llama-1b-after-1.log
+ggml_metal_device_init: GPU name:   MTL0 (Apple M1 Max)
+AB_BACKEND load_tensors: offloaded 17/17 layers to GPU
+AB_BACKEND load_tensors:   CPU_Mapped model buffer size =   205.49 MiB
+AB_BACKEND load_tensors:  MTL0_Mapped model buffer size =   762.81 MiB
+AB_BACKEND llama_context: flash_attn            = auto
+AB_BACKEND llama_kv_cache:       MTL0 KV buffer size =   128.00 MiB
+AB_BACKEND ~llama_context:       MTL0 compute buffer size is 517.0000 MiB, matches expectation of 517.0000 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is  24.0273 MiB, matches expectation of  24.0273 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+RUN llama-1b-after-2.log
+ggml_metal_device_init: GPU name:   MTL0 (Apple M1 Max)
+AB_BACKEND load_tensors: offloaded 17/17 layers to GPU
+AB_BACKEND load_tensors:   CPU_Mapped model buffer size =   205.49 MiB
+AB_BACKEND load_tensors:  MTL0_Mapped model buffer size =   762.81 MiB
+AB_BACKEND llama_context: flash_attn            = auto
+AB_BACKEND llama_kv_cache:       MTL0 KV buffer size =   128.00 MiB
+AB_BACKEND ~llama_context:       MTL0 compute buffer size is 517.0000 MiB, matches expectation of 517.0000 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is  24.0273 MiB, matches expectation of  24.0273 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+RUN llama-1b-after-3.log
+ggml_metal_device_init: GPU name:   MTL0 (Apple M1 Max)
+AB_BACKEND load_tensors: offloaded 17/17 layers to GPU
+AB_BACKEND load_tensors:   CPU_Mapped model buffer size =   205.49 MiB
+AB_BACKEND load_tensors:  MTL0_Mapped model buffer size =   762.81 MiB
+AB_BACKEND llama_context: flash_attn            = auto
+AB_BACKEND llama_kv_cache:       MTL0 KV buffer size =   128.00 MiB
+AB_BACKEND ~llama_context:       MTL0 compute buffer size is 517.0000 MiB, matches expectation of 517.0000 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is  24.0273 MiB, matches expectation of  24.0273 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+RUN llama-1b-before-0.log
+ggml_metal_device_init: GPU name:   MTL0 (Apple M1 Max)
+AB_BACKEND load_tensors: offloaded 17/17 layers to GPU
+AB_BACKEND load_tensors:   CPU_Mapped model buffer size =   205.49 MiB
+AB_BACKEND load_tensors:  MTL0_Mapped model buffer size =   762.81 MiB
+AB_BACKEND llama_context: flash_attn            = auto
+AB_BACKEND llama_kv_cache:       MTL0 KV buffer size =   128.00 MiB
+AB_BACKEND ~llama_context:       MTL0 compute buffer size is 517.0000 MiB, matches expectation of 517.0000 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is  24.0273 MiB, matches expectation of  24.0273 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+RUN llama-1b-before-1.log
+ggml_metal_device_init: GPU name:   MTL0 (Apple M1 Max)
+AB_BACKEND load_tensors: offloaded 17/17 layers to GPU
+AB_BACKEND load_tensors:   CPU_Mapped model buffer size =   205.49 MiB
+AB_BACKEND load_tensors:  MTL0_Mapped model buffer size =   762.81 MiB
+AB_BACKEND llama_context: flash_attn            = auto
+AB_BACKEND llama_kv_cache:       MTL0 KV buffer size =   128.00 MiB
+AB_BACKEND ~llama_context:       MTL0 compute buffer size is 517.0000 MiB, matches expectation of 517.0000 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is  24.0273 MiB, matches expectation of  24.0273 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+RUN llama-1b-before-2.log
+ggml_metal_device_init: GPU name:   MTL0 (Apple M1 Max)
+AB_BACKEND load_tensors: offloaded 17/17 layers to GPU
+AB_BACKEND load_tensors:   CPU_Mapped model buffer size =   205.49 MiB
+AB_BACKEND load_tensors:  MTL0_Mapped model buffer size =   762.81 MiB
+AB_BACKEND llama_context: flash_attn            = auto
+AB_BACKEND llama_kv_cache:       MTL0 KV buffer size =   128.00 MiB
+AB_BACKEND ~llama_context:       MTL0 compute buffer size is 517.0000 MiB, matches expectation of 517.0000 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is  24.0273 MiB, matches expectation of  24.0273 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB
+RUN llama-1b-before-3.log
+ggml_metal_device_init: GPU name:   MTL0 (Apple M1 Max)
+AB_BACKEND load_tensors: offloaded 17/17 layers to GPU
+AB_BACKEND load_tensors:   CPU_Mapped model buffer size =   205.49 MiB
+AB_BACKEND load_tensors:  MTL0_Mapped model buffer size =   762.81 MiB
+AB_BACKEND llama_context: flash_attn            = auto
+AB_BACKEND llama_kv_cache:       MTL0 KV buffer size =   128.00 MiB
+AB_BACKEND ~llama_context:       MTL0 compute buffer size is 517.0000 MiB, matches expectation of 517.0000 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is  24.0273 MiB, matches expectation of  24.0273 MiB
+AB_BACKEND ~llama_context:        CPU compute buffer size is   0.0000 MiB, matches expectation of   0.0000 MiB

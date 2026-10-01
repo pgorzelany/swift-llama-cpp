@@ -1,5 +1,10 @@
 # CPU i Metal na Macu
 
+Bezpośrednie porównanie całego wrappera przed/po, wykonane 01.10.2026:
+[GPU-BEFORE-AFTER.md](GPU-BEFORE-AFTER.md). Greedy przyspieszyło; sampler
+produkcyjny ma regresję w części prób. Poniższe CPU/Metal wyniki nie są
+porównaniem starego i nowego wrappera.
+
 Host: Apple M1 Max, 10 CPU cores (8P + 2E), 64 GB, macOS 27.0, Swift 6.4.
 Runtime: przypięty b10964 Apple XCFramework. Pomiar obejmuje rzeczywisty wrapper
 Swift: jego formatowanie i tokenizację promptu, batching, sampler i decode.

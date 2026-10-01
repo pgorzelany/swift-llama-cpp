@@ -1,0 +1,488 @@
+[
+  {
+    "model": "lfm-1.2b",
+    "sampling": "greedy-controlled",
+    "prompt": 64,
+    "tgBefore": 216.54853774815973,
+    "tgAfter": 246.3997444014936,
+    "tgChangePercent": 13.784995716780157,
+    "ppBefore": 2277.1479261362433,
+    "ppAfter": 2227.974471351189,
+    "ttftBeforeMs": 32.829583,
+    "ttftAfterMs": 33.207396,
+    "blockChangesPercent": [
+      14.457825093129939,
+      11.36997650800815,
+      13.884396077141336,
+      11.582343496492475
+    ],
+    "sameOutputPairs": 16,
+    "tgBeforeRange": [
+      215.79665211725177,
+      224.49188979202054
+    ],
+    "tgAfterRange": [
+      238.5894893590691,
+      258.7029281937685
+    ]
+  },
+  {
+    "model": "lfm-1.2b",
+    "sampling": "greedy-controlled",
+    "prompt": 512,
+    "tgBefore": 214.00844430239226,
+    "tgAfter": 243.9053120203717,
+    "tgChangePercent": 13.96994768848252,
+    "ppBefore": 2787.0798904766248,
+    "ppAfter": 2734.7949965907883,
+    "ttftBeforeMs": 188.9125415,
+    "ttftAfterMs": 192.280958,
+    "blockChangesPercent": [
+      10.88903991738932,
+      13.373353777486274,
+      14.326402393833293,
+      13.222347326092665
+    ],
+    "sameOutputPairs": 16,
+    "tgBeforeRange": [
+      213.0599660337139,
+      224.18068963584648
+    ],
+    "tgAfterRange": [
+      240.25361832647994,
+      248.03974384222536
+    ]
+  },
+  {
+    "model": "lfm-1.2b",
+    "sampling": "greedy-controlled",
+    "prompt": 2048,
+    "tgBefore": 223.72515899871655,
+    "tgAfter": 239.57601981559418,
+    "tgChangePercent": 7.0849701874470705,
+    "ppBefore": 2539.3395349415114,
+    "ppAfter": 2525.913259620263,
+    "ttftBeforeMs": 811.985167,
+    "ttftAfterMs": 815.8026665,
+    "blockChangesPercent": [
+      3.902278646776769,
+      6.213398234299694,
+      7.381781439566915,
+      7.2504885973009525
+    ],
+    "sameOutputPairs": 16,
+    "tgBeforeRange": [
+      220.95537305639107,
+      232.61963327878283
+    ],
+    "tgAfterRange": [
+      235.46516057851994,
+      245.5710079236402
+    ]
+  },
+  {
+    "model": "lfm-1.2b",
+    "sampling": "greedy-native",
+    "prompt": 64,
+    "tgBefore": 225.02317281049238,
+    "tgAfter": 243.9762012178143,
+    "tgChangePercent": 8.422700724819832,
+    "ppBefore": 2217.7046791387356,
+    "ppAfter": 2172.4544533796197,
+    "ttftBeforeMs": 33.12427099999999,
+    "ttftAfterMs": 34.0973965,
+    "blockChangesPercent": [
+      2.8701697718174657,
+      4.428166262146882,
+      9.934843734919173,
+      8.547040492508295
+    ],
+    "sameOutputPairs": 0,
+    "tgBeforeRange": [
+      224.25531467575834,
+      236.17695927700328
+    ],
+    "tgAfterRange": [
+      222.6876362891828,
+      249.21374232485925
+    ]
+  },
+  {
+    "model": "lfm-1.2b",
+    "sampling": "greedy-native",
+    "prompt": 512,
+    "tgBefore": 210.06188636386509,
+    "tgAfter": 242.07248867782408,
+    "tgChangePercent": 15.238653174098825,
+    "ppBefore": 2664.473934646615,
+    "ppAfter": 2576.242694181619,
+    "ttftBeforeMs": 196.6644585,
+    "ttftAfterMs": 203.585979,
+    "blockChangesPercent": [
+      14.928130752496859,
+      15.238653174098825,
+      15.006518672464097,
+      15.551018238787574
+    ],
+    "sameOutputPairs": 0,
+    "tgBeforeRange": [
+      206.08520139264135,
+      219.85320168129715
+    ],
+    "tgAfterRange": [
+      229.01207233561004,
+      245.5482391985152
+    ]
+  },
+  {
+    "model": "lfm-1.2b",
+    "sampling": "greedy-native",
+    "prompt": 2048,
+    "tgBefore": 222.7812399525447,
+    "tgAfter": 239.58272901116993,
+    "tgChangePercent": 7.5416983325006015,
+    "ppBefore": 2556.7247557663195,
+    "ppAfter": 2535.9762865431476,
+    "ttftBeforeMs": 805.5996665,
+    "ttftAfterMs": 812.399875,
+    "blockChangesPercent": [
+      7.4182027596684685,
+      7.635493755293599,
+      6.6039309504458465,
+      6.0478008736566835
+    ],
+    "sameOutputPairs": 0,
+    "tgBeforeRange": [
+      222.2443432511932,
+      234.07633208707682
+    ],
+    "tgAfterRange": [
+      224.14908716159837,
+      242.7506685125832
+    ]
+  },
+  {
+    "model": "lfm-1.2b",
+    "sampling": "production",
+    "prompt": 64,
+    "tgBefore": 221.1524870898465,
+    "tgAfter": 219.68587809489958,
+    "tgChangePercent": -0.6631664035282037,
+    "ppBefore": 2205.789407326568,
+    "ppAfter": 2269.1715825208726,
+    "ttftBeforeMs": 33.2595415,
+    "ttftAfterMs": 33.0563755,
+    "blockChangesPercent": [
+      -0.8215836392788112,
+      -0.17158655855038507,
+      -0.9464963248828062,
+      -0.7755428605787928
+    ],
+    "sameOutputPairs": 0,
+    "tgBeforeRange": [
+      217.18431235360927,
+      232.4194226374702
+    ],
+    "tgAfterRange": [
+      218.2272615291764,
+      222.61437444807723
+    ]
+  },
+  {
+    "model": "lfm-1.2b",
+    "sampling": "production",
+    "prompt": 512,
+    "tgBefore": 229.1286615950325,
+    "tgAfter": 222.8780365272006,
+    "tgChangePercent": -2.7279978961686546,
+    "ppBefore": 2622.7085149764125,
+    "ppAfter": 2620.9945975375554,
+    "ttftBeforeMs": 199.75793800000002,
+    "ttftAfterMs": 200.30852149999998,
+    "blockChangesPercent": [
+      -2.6296563769034442,
+      -1.691112187965782,
+      -2.747868605115289,
+      -2.884584492624098
+    ],
+    "sameOutputPairs": 0,
+    "tgBeforeRange": [
+      222.11437797940843,
+      230.59199089161638
+    ],
+    "tgAfterRange": [
+      218.77942113180308,
+      231.34662467407327
+    ]
+  },
+  {
+    "model": "lfm-1.2b",
+    "sampling": "production",
+    "prompt": 2048,
+    "tgBefore": 199.01175691617695,
+    "tgAfter": 217.5510376084099,
+    "tgChangePercent": 9.315671083714738,
+    "ppBefore": 2578.638359868697,
+    "ppAfter": 2555.5009687028387,
+    "ttftBeforeMs": 798.8892089999999,
+    "ttftAfterMs": 806.608875,
+    "blockChangesPercent": [
+      9.252070643641508,
+      9.069678045959307,
+      9.602699594447706,
+      9.601413160867555
+    ],
+    "sameOutputPairs": 0,
+    "tgBeforeRange": [
+      197.2046742758378,
+      206.8466780478449
+    ],
+    "tgAfterRange": [
+      216.67249775241217,
+      219.88511676047435
+    ]
+  },
+  {
+    "model": "llama-1b",
+    "sampling": "greedy-controlled",
+    "prompt": 64,
+    "tgBefore": 170.6933825822124,
+    "tgAfter": 191.16295395836835,
+    "tgChangePercent": 11.99201226579305,
+    "ppBefore": 2058.238678561449,
+    "ppAfter": 2019.442047481491,
+    "ttftBeforeMs": 37.142979,
+    "ttftAfterMs": 37.476124999999996,
+    "blockChangesPercent": [
+      16.273805117591067,
+      6.545506599030149,
+      16.103095808263078,
+      6.652538677387643
+    ],
+    "sameOutputPairs": 16,
+    "tgBeforeRange": [
+      167.61415192893483,
+      175.8677001810525
+    ],
+    "tgAfterRange": [
+      170.9267789366097,
+      205.49083322089132
+    ]
+  },
+  {
+    "model": "llama-1b",
+    "sampling": "greedy-controlled",
+    "prompt": 512,
+    "tgBefore": 173.1865838377584,
+    "tgAfter": 185.63398329154361,
+    "tgChangePercent": 7.187276969124801,
+    "ppBefore": 2554.2102197995478,
+    "ppAfter": 2354.6518281237472,
+    "ttftBeforeMs": 206.965437,
+    "ttftAfterMs": 223.14472949999998,
+    "blockChangesPercent": [
+      10.016145905071138,
+      7.728330616526535,
+      8.21949297569573,
+      6.659346638296837
+    ],
+    "sameOutputPairs": 16,
+    "tgBeforeRange": [
+      169.02606274133356,
+      175.697430400922
+    ],
+    "tgAfterRange": [
+      178.86721225712614,
+      195.44381739349444
+    ]
+  },
+  {
+    "model": "llama-1b",
+    "sampling": "greedy-controlled",
+    "prompt": 2048,
+    "tgBefore": 166.10402329323884,
+    "tgAfter": 180.6957181547528,
+    "tgChangePercent": 8.784672744352417,
+    "ppBefore": 2250.4550474335733,
+    "ppAfter": 2201.038523244676,
+    "ttftBeforeMs": 916.7856879999999,
+    "ttftAfterMs": 936.3742285000001,
+    "blockChangesPercent": [
+      8.544148953696041,
+      9.34592092625277,
+      8.816148372128652,
+      8.376871682231712
+    ],
+    "sameOutputPairs": 16,
+    "tgBeforeRange": [
+      156.1712982063219,
+      168.08227043051684
+    ],
+    "tgAfterRange": [
+      172.6421150912078,
+      182.735841761177
+    ]
+  },
+  {
+    "model": "llama-1b",
+    "sampling": "greedy-native",
+    "prompt": 64,
+    "tgBefore": 170.55753357428063,
+    "tgAfter": 183.4260360442084,
+    "tgChangePercent": 7.544962805365207,
+    "ppBefore": 1996.3574626090845,
+    "ppAfter": 1909.555227481219,
+    "ttftBeforeMs": 37.603541500000006,
+    "ttftAfterMs": 39.3600625,
+    "blockChangesPercent": [
+      8.256830317062347,
+      6.94562633830238,
+      7.189396961980199,
+      8.73448405447219
+    ],
+    "sameOutputPairs": 0,
+    "tgBeforeRange": [
+      163.93152131592095,
+      173.01618867601366
+    ],
+    "tgAfterRange": [
+      181.0359645028754,
+      185.72949405782572
+    ]
+  },
+  {
+    "model": "llama-1b",
+    "sampling": "greedy-native",
+    "prompt": 512,
+    "tgBefore": 172.27352122701154,
+    "tgAfter": 184.4399730585911,
+    "tgChangePercent": 7.06228777639446,
+    "ppBefore": 2359.697377238752,
+    "ppAfter": 2315.4207061550096,
+    "ttftBeforeMs": 222.826958,
+    "ttftAfterMs": 226.92922900000002,
+    "blockChangesPercent": [
+      3.826115507938588,
+      7.4216484462860555,
+      7.404214494607064,
+      8.861095816102171
+    ],
+    "sameOutputPairs": 0,
+    "tgBeforeRange": [
+      168.65591309186098,
+      173.48902404611547
+    ],
+    "tgAfterRange": [
+      171.493379082765,
+      186.9404565436462
+    ]
+  },
+  {
+    "model": "llama-1b",
+    "sampling": "greedy-native",
+    "prompt": 2048,
+    "tgBefore": 162.36683469531283,
+    "tgAfter": 182.00814447583286,
+    "tgChangePercent": 12.096872995878538,
+    "ppBefore": 2248.0163670481174,
+    "ppAfter": 2239.96065509042,
+    "ttftBeforeMs": 917.0419795,
+    "ttftAfterMs": 920.2849165,
+    "blockChangesPercent": [
+      12.10886489502947,
+      12.04076824221163,
+      12.344742653644914,
+      12.884443767195975
+    ],
+    "sameOutputPairs": 0,
+    "tgBeforeRange": [
+      159.7748835800311,
+      167.33283874278132
+    ],
+    "tgAfterRange": [
+      179.7457864329768,
+      183.21965603372388
+    ]
+  },
+  {
+    "model": "llama-1b",
+    "sampling": "production",
+    "prompt": 64,
+    "tgBefore": 172.20596441769948,
+    "tgAfter": 168.51448839665193,
+    "tgChangePercent": -2.1436400495940866,
+    "ppBefore": 1908.5090641972438,
+    "ppAfter": 2023.5849889420756,
+    "ttftBeforeMs": 39.223625000000006,
+    "ttftAfterMs": 37.909521,
+    "blockChangesPercent": [
+      -2.49149257724105,
+      -3.5994762533041014,
+      0.7632431694548192,
+      -10.956312605755247
+    ],
+    "sameOutputPairs": 0,
+    "tgBeforeRange": [
+      159.143311660418,
+      176.90402716600158
+    ],
+    "tgAfterRange": [
+      146.4100654577441,
+      170.18666403047524
+    ]
+  },
+  {
+    "model": "llama-1b",
+    "sampling": "production",
+    "prompt": 512,
+    "tgBefore": 171.54103674985603,
+    "tgAfter": 165.58900926890692,
+    "tgChangePercent": -3.469739715767517,
+    "ppBefore": 2339.1100234316445,
+    "ppAfter": 2371.392355992649,
+    "ttftBeforeMs": 224.610334,
+    "ttftAfterMs": 222.4648545,
+    "blockChangesPercent": [
+      -3.5581368390182333,
+      -4.100829801424732,
+      -3.0746653217688102,
+      -11.185408697342346
+    ],
+    "sameOutputPairs": 0,
+    "tgBeforeRange": [
+      166.43438840703766,
+      173.9033162340724
+    ],
+    "tgAfterRange": [
+      145.02874304263696,
+      166.71851265079871
+    ]
+  },
+  {
+    "model": "llama-1b",
+    "sampling": "production",
+    "prompt": 2048,
+    "tgBefore": 166.92761796288167,
+    "tgAfter": 155.78802744795382,
+    "tgChangePercent": -6.673305862068235,
+    "ppBefore": 2222.622976675464,
+    "ppAfter": 2248.541848571631,
+    "ttftBeforeMs": 927.6635005,
+    "ttftAfterMs": 917.7032295,
+    "blockChangesPercent": [
+      -6.205109093820393,
+      -6.481149170235123,
+      -7.1909642301628445,
+      -8.960194064402472
+    ],
+    "sameOutputPairs": 0,
+    "tgBeforeRange": [
+      163.68328307745034,
+      168.23540309336644
+    ],
+    "tgAfterRange": [
+      139.29435820022164,
+      159.13460612009317
+    ]
+  }
+]

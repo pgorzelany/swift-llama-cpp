@@ -1,0 +1,34 @@
+{
+  "revisions": {
+    "before": "b7f9e68250aff79d11232e8905c7f2db41a4bc18",
+    "after": "bcb9e0518a9f62031d7093d8ec0330aa2b8bc7fe"
+  },
+  "snapshots": "/var/folders/1h/nmjwtc2s5msdjjbtgxym0f6c0000gn/T/enclave-gpu-ab-klhqht35",
+  "harnessSHA256": "bebfd6e8291c74200143e414b6698a77df9845ae40561cbac6d85b98ffac843f",
+  "models": {
+    "lfm-1.2b": {
+      "path": "/Users/mlody/Projects/AI/EnclaveCode/EnclaveAI-Apps/SharedIntelligence/LFM2.5-1.2B-Instruct-QAD-Q4_0.gguf",
+      "sha256": "bb741ebb106d543e9de114b843a3d3d73d51c74b5801e69da2abde821a0cb3e1"
+    },
+    "llama-1b": {
+      "path": "/Users/mlody/Projects/AI/EnclaveCode/EnclaveAI-Apps/SharedPackages/swift-llama-cpp/Tests/SwiftLlamaTests/Resources/Llama-3.2-1B-Instruct-Q4_K_M.gguf",
+      "sha256": "6f85a640a97cf2bf5b8e764087b1e83da0fdb51d7c9fab7d0fece9385611df83"
+    }
+  },
+  "blocks": 4,
+  "repetitionsPerBlock": 4,
+  "llamaRevision": "b29c606e28a01b1bc8c1351026a0fa6e616bf6c4",
+  "machine": "arm64",
+  "os": "ProductName:\t\tmacOS\nProductVersion:\t\t27.0\nBuildVersion:\t\t26A428\n",
+  "swift": "Apple Swift version 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1)\nTarget: arm64-apple-macosx27.0.0\n",
+  "verifiedUnmodifiedSourceFiles": {
+    "before": 24,
+    "after": 25
+  },
+  "runtimeFrameworkSHA256": {
+    "before": "8c09f34e5266c3ea47fbc5d802028b369d59b0955a6fa890a3c817323404c77d",
+    "after": "8c09f34e5266c3ea47fbc5d802028b369d59b0955a6fa890a3c817323404c77d"
+  },
+  "metalDevice": "Apple M1 Max (verified in backend logs)",
+  "harnessSHA256Verified": true
+}

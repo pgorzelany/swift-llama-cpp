@@ -48,6 +48,10 @@ Prompt batch size, physical microbatch size and the two thread counts are indepe
 The second example shows configuration controls; the best batch depends on the
 workload. See [measured CPU/Metal results](Verification/PERFORMANCE.md) and
 [correctness fixes, regression coverage and API changes](Verification/README.md).
+
+The [GPU before/after comparison](Verification/GPU-BEFORE-AFTER.md) measures both
+revisions directly: greedy improves, while default production sampling regresses
+in some workloads. The CPU/Metal comparison alone does not establish a version speedup.
 The low-level sampler initializer now throws for invalid parameters or grammar.
 
 ## Coverage
