@@ -1,5 +1,9 @@
 # Naprawy wrappera i pomiary CPU / Metal
 
+Kontrola rzeczywistych odpowiedzi i zgodności z niezależną generacją C:
+[GENERATION-QUALITY.md](GENERATION-QUALITY.md). Nowy wrapper zachowuje tekst
+i tokeny w 36/36 próbach; raport pokazuje również błędy jakościowe modeli.
+
 Praca na branchu fix/llama-wrapper-correctness-performance, po audycie z 30.09.2026.
 Raport w Audit/ opisuje stan sprzed napraw. Runtime pozostaje przypięty do b10964,
 b29c606e28a01b1bc8c1351026a0fa6e616bf6c4.

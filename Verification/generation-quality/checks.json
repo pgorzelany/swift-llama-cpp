@@ -1,0 +1,14 @@
+{
+  "before": {
+    "answers": 36,
+    "streamMatchesC": 33,
+    "naturalEOS": 36,
+    "matchesIndependentC": null
+  },
+  "after": {
+    "answers": 36,
+    "streamMatchesC": 36,
+    "naturalEOS": 36,
+    "matchesIndependentC": 36
+  }
+}

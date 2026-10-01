@@ -1,0 +1,97 @@
+Building for production...
+[Planning deferred tasks]
+[2 / 5] GPUComparison-product
+/private/var/folders/1h/nmjwtc2s5msdjjbtgxym0f6c0000gn/T/enclave-generation-quality-ify0usdq/after/Sources/SwiftLlama/LlamaContext.swift:226:46: warning: 'llama_set_warmup' is deprecated: user code should do warmup runs manually [TAG_LLAMA_GRAPH_NO_WARMUP] [#DeprecatedDeclaration]
+224 |     public func setEmbeddingsOutput(_ enabled: Bool) { llama_set_embeddings(contextPointer, enabled) }
+225 |     public func setCausalAttention(_ enabled: Bool) { llama_set_causal_attn(contextPointer, enabled) }
+226 |     public func setWarmup(_ enabled: Bool) { llama_set_warmup(contextPointer, enabled) }
+    |                                              `- warning: 'llama_set_warmup' is deprecated: user code should do warmup runs manually [TAG_LLAMA_GRAPH_NO_WARMUP] [#DeprecatedDeclaration]
+227 |
+228 |     // Abort callback bridging
+
+/private/var/folders/1h/nmjwtc2s5msdjjbtgxym0f6c0000gn/T/enclave-generation-quality-ify0usdq/after/Sources/SwiftLlama/LlamaTypedJSONGrammarBuilder.swift:214:9: warning: no calls to throwing functions occur within 'try' expression [#UnnecessaryEffectMarker]
+212 |     // Primitive decoders
+213 |     func decode(_ type: String.Type, forKey key: Key) throws -> String {
+214 |         try object.addRequired(key: key.stringValue) { slot in
+    |         `- warning: no calls to throwing functions occur within 'try' expression [#UnnecessaryEffectMarker]
+215 |             recorder.registerPrimitiveString(into: slot)
+216 |         }
+
+/private/var/folders/1h/nmjwtc2s5msdjjbtgxym0f6c0000gn/T/enclave-generation-quality-ify0usdq/after/Sources/SwiftLlama/LlamaTypedJSONGrammarBuilder.swift:220:9: warning: no calls to throwing functions occur within 'try' expression [#UnnecessaryEffectMarker]
+218 |     }
+219 |     func decode(_ type: Bool.Type, forKey key: Key) throws -> Bool {
+220 |         try object.addRequired(key: key.stringValue) { slot in
+    |         `- warning: no calls to throwing functions occur within 'try' expression [#UnnecessaryEffectMarker]
+221 |             recorder.registerPrimitiveBoolean(into: slot)
+222 |         }
+
+/private/var/folders/1h/nmjwtc2s5msdjjbtgxym0f6c0000gn/T/enclave-generation-quality-ify0usdq/after/Sources/SwiftLlama/LlamaTypedJSONGrammarBuilder.swift:226:9: warning: no calls to throwing functions occur within 'try' expression [#UnnecessaryEffectMarker]
+224 |     }
+225 |     func decode(_ type: Int.Type, forKey key: Key) throws -> Int {
+226 |         try object.addRequired(key: key.stringValue) { slot in
+    |         `- warning: no calls to throwing functions occur within 'try' expression [#UnnecessaryEffectMarker]
+227 |             recorder.registerPrimitiveInteger(into: slot)
+228 |         }
+
+/private/var/folders/1h/nmjwtc2s5msdjjbtgxym0f6c0000gn/T/enclave-generation-quality-ify0usdq/after/Sources/SwiftLlama/LlamaTypedJSONGrammarBuilder.swift:241:9: warning: no calls to throwing functions occur within 'try' expression [#UnnecessaryEffectMarker]
+239 |     func decode(_ type: UInt64.Type, forKey key: Key) throws -> UInt64 { UInt64(try decode(Int.self, forKey: key)) }
+240 |     func decode(_ type: Float.Type, forKey key: Key) throws -> Float {
+241 |         try object.addRequired(key: key.stringValue) { slot in
+    |         `- warning: no calls to throwing functions occur within 'try' expression [#UnnecessaryEffectMarker]
+242 |             recorder.registerPrimitiveNumber(into: slot)
+243 |         }
+
+/private/var/folders/1h/nmjwtc2s5msdjjbtgxym0f6c0000gn/T/enclave-generation-quality-ify0usdq/after/Sources/SwiftLlama/LlamaTypedJSONGrammarBuilder.swift:247:9: warning: no calls to throwing functions occur within 'try' expression [#UnnecessaryEffectMarker]
+245 |     }
+246 |     func decode(_ type: Double.Type, forKey key: Key) throws -> Double {
+247 |         try object.addRequired(key: key.stringValue) { slot in
+    |         `- warning: no calls to throwing functions occur within 'try' expression [#UnnecessaryEffectMarker]
+248 |             recorder.registerPrimitiveNumber(into: slot)
+249 |         }
+
+/private/var/folders/1h/nmjwtc2s5msdjjbtgxym0f6c0000gn/T/enclave-generation-quality-ify0usdq/after/Sources/SwiftLlama/LlamaTypedJSONGrammarBuilder.swift:264:9: warning: no calls to throwing functions occur within 'try' expression [#UnnecessaryEffectMarker]
+262 |
+263 |     func decodeIfPresent(_ type: String.Type, forKey key: Key) throws -> String? {
+264 |         try object.addOptional(key: key.stringValue) { slot in
+    |         `- warning: no calls to throwing functions occur within 'try' expression [#UnnecessaryEffectMarker]
+265 |             recorder.registerPrimitiveString(into: slot)
+266 |         }
+
+/private/var/folders/1h/nmjwtc2s5msdjjbtgxym0f6c0000gn/T/enclave-generation-quality-ify0usdq/after/Sources/SwiftLlama/LlamaTypedJSONGrammarBuilder.swift:270:9: warning: no calls to throwing functions occur within 'try' expression [#UnnecessaryEffectMarker]
+268 |     }
+269 |     func decodeIfPresent(_ type: Bool.Type, forKey key: Key) throws -> Bool? {
+270 |         try object.addOptional(key: key.stringValue) { slot in
+    |         `- warning: no calls to throwing functions occur within 'try' expression [#UnnecessaryEffectMarker]
+271 |             recorder.registerPrimitiveBoolean(into: slot)
+272 |         }
+
+/private/var/folders/1h/nmjwtc2s5msdjjbtgxym0f6c0000gn/T/enclave-generation-quality-ify0usdq/after/Sources/SwiftLlama/LlamaTypedJSONGrammarBuilder.swift:276:9: warning: no calls to throwing functions occur within 'try' expression [#UnnecessaryEffectMarker]
+274 |     }
+275 |     func decodeIfPresent(_ type: Int.Type, forKey key: Key) throws -> Int? {
+276 |         try object.addOptional(key: key.stringValue) { slot in
+    |         `- warning: no calls to throwing functions occur within 'try' expression [#UnnecessaryEffectMarker]
+277 |             recorder.registerPrimitiveInteger(into: slot)
+278 |         }
+
+/private/var/folders/1h/nmjwtc2s5msdjjbtgxym0f6c0000gn/T/enclave-generation-quality-ify0usdq/after/Sources/SwiftLlama/LlamaTypedJSONGrammarBuilder.swift:282:9: warning: no calls to throwing functions occur within 'try' expression [#UnnecessaryEffectMarker]
+280 |     }
+281 |     func decodeIfPresent(_ type: Double.Type, forKey key: Key) throws -> Double? {
+282 |         try object.[3 / 6] GPUComparison-product
+addOptional(key: key.stringValue) { slot in
+    |         `- warning: no calls to throwing functions occur within 'try' expression [#UnnecessaryEffectMarker]
+283 |             recorder.registerPrimitiveNumber(into: slot)
+284 |         }
+
+/private/var/folders/1h/nmjwtc2s5msdjjbtgxym0f6c0000gn/T/enclave-generation-quality-ify0usdq/after/Sources/SwiftLlama/LlamaTypedJSONGrammarBuilder.swift:288:9: warning: no calls to throwing functions occur within 'try' expression [#UnnecessaryEffectMarker]
+286 |     }
+287 |     func decodeIfPresent(_ type: Float.Type, forKey key: Key) throws -> Float? {
+288 |         try object.addOptional(key: key.stringValue) { slot in
+    |         `- warning: no calls to throwing functions occur within 'try' expression [#UnnecessaryEffectMarker]
+289 |             recorder.registerPrimitiveNumber(into: slot)
+290 |         }
+
+[#DeprecatedDeclaration]: <https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration>
+[#UnnecessaryEffectMarker]: <https://docs.swift.org/compiler/documentation/diagnostics/unnecessary-effect-marker>
+[5 / 6] GPUComparison-product
+[6 / 6] GPUComparison-product
+Build complete! (6,89 secs)

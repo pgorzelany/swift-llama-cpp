@@ -52,6 +52,10 @@ workload. See [measured CPU/Metal results](Verification/PERFORMANCE.md) and
 The [GPU before/after comparison](Verification/GPU-BEFORE-AFTER.md) measures both
 revisions directly: greedy improves, while default production sampling regresses
 in some workloads. The CPU/Metal comparison alone does not establish a version speedup.
+
+[Generation quality checks](Verification/GENERATION-QUALITY.md) preserve full
+before/after answers and compare the corrected wrapper against independent C
+generation. Technical agreement does not guarantee that every model answer is correct.
 The low-level sampler initializer now throws for invalid parameters or grammar.
 
 ## Coverage

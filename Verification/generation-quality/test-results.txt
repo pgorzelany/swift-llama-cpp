@@ -1,0 +1,16 @@
+2026-10-01 Mac Release selected generation tests.
+
+􁁛  Test "Factual response follows the requested topic" passed after 0.671 seconds.
+􁁛  Test "Multi-turn prompt preserves conversation facts" passed after 0.329 seconds.
+􁁛  Test "Service returns to a clean deterministic state after cancellation" passed after 0.683 seconds.
+􁁛  Test "Oversized prompt reports the context limit" passed after 0.258 seconds.
+􁁛  Test "Reported effective capacity matches the inference boundary without mutating state" passed after 3.980 seconds.
+􁁛  Test "Native parser requires quoted, unique keys and required fields" passed after 1.158 seconds.
+􁁛  Test "Distinct punctuation and Unicode coding keys do not collide" passed after 0.392 seconds.
+􁁛  Test "Recursive schema fails before overflowing the stack" passed after 0.001 seconds.
+LLAMA_NATIVE_GGUF_OUTPUT Paris. ELAPSED 0.273963792 seconds TOKENS 2
+􁁛  Test "A real GGUF answers sensibly through the native Apple executor" passed after 0.292 seconds.
+􁁛  Test "Native generation assembles multilingual byte tokens without advancing grammar for the prompt" passed after 0.884 seconds.
+􁁛  Test "Short story remains coherent and on-topic" passed after 0.858 seconds.
+􁁛  Test "Streaming typed JSON for Person produces valid JSON" passed after 0.776 seconds.
+􁁛  Test run with 12 tests in 6 suites passed after 10.287 seconds.

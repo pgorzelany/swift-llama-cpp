@@ -1,0 +1,33 @@
+{
+  "revisions": {
+    "before": "b7f9e68250aff79d11232e8905c7f2db41a4bc18",
+    "after": "bcb9e0518a9f62031d7093d8ec0330aa2b8bc7fe"
+  },
+  "snapshots": "/var/folders/1h/nmjwtc2s5msdjjbtgxym0f6c0000gn/T/enclave-generation-quality-ify0usdq",
+  "models": {
+    "llama-1b": {
+      "path": "/Users/mlody/Projects/AI/EnclaveCode/EnclaveAI-Apps/SharedPackages/swift-llama-cpp/Tests/SwiftLlamaTests/Resources/Llama-3.2-1B-Instruct-Q4_K_M.gguf",
+      "sha256": "6f85a640a97cf2bf5b8e764087b1e83da0fdb51d7c9fab7d0fece9385611df83"
+    },
+    "lfm-1.2b": {
+      "path": "/Users/mlody/Projects/AI/EnclaveCode/EnclaveAI-Apps/SharedIntelligence/LFM2.5-1.2B-Instruct-QAD-Q4_0.gguf",
+      "sha256": "bb741ebb106d543e9de114b843a3d3d73d51c74b5801e69da2abde821a0cb3e1"
+    }
+  },
+  "harnessSHA256": "6f48765478a32716f5d64ae58e3c6a3f47532d2fe1d6b17d49010709882a53cc",
+  "sampling": "temperature 0/0.5, seed 42, default penalties, no grammar",
+  "runtime": "b10964",
+  "gpu": true,
+  "batch": 1024,
+  "context": 4096,
+  "outputLimit": 256,
+  "runtimeFrameworkSHA256": {
+    "before": "8c09f34e5266c3ea47fbc5d802028b369d59b0955a6fa890a3c817323404c77d",
+    "after": "8c09f34e5266c3ea47fbc5d802028b369d59b0955a6fa890a3c817323404c77d"
+  },
+  "verifiedUnmodifiedSourceFiles": {
+    "before": 24,
+    "after": 25
+  },
+  "referenceScope": "Corrected wrapper only; independent C context/batch/sampler/generation with the same prompt tokens"
+}
