@@ -55,10 +55,15 @@ struct LlamaStopCacheTests {
         print("STOP_CACHE continuation_prompt_decoded=\(decodedAfter - decodedBefore) cached_before=\(beforeStop) output_tokens=\(response.usage.output.totalTokenCount)")
         if inFlight {
             #expect(decodedAfter - decodedBefore >= beforeStop - 24)
-            await engine.resetCompletion()
-            let fresh = LanguageModelSession(model: model, transcript: saved)
+            let referenceEngine = try Llama(modelPath: path, config: .init(batchSize: 128, maxTokenCount: 4096), thinkingEnabled: false)
+            let referenceModel = LlamaLanguageModel(capabilityProfile: .lfm3QADQ4_0, engineFactory: { referenceEngine })
+            let fresh = LanguageModelSession(model: referenceModel, transcript: saved)
+            // Keep prewarm/continuation batch boundaries identical to the app's reuse path.
+            try await referenceModel.prewarm(transcript: saved)
             let reference = try await fresh.respond(to: "Continue.", options: .init(samplingMode: .greedy, maximumResponseTokens: 8))
             #expect(response.content == reference.content)
+            #expect(await engine.getProcessedTokenIds() == referenceEngine.getProcessedTokenIds())
+            await referenceModel.unload()
         } else {
             #expect(decodedAfter - decodedBefore < 64)
         }
