@@ -59,7 +59,7 @@ struct LlamaLanguageModelTests {
         consumer.cancel()
         await model.cancelAndWait()
         _ = await consumer.result
-        #expect(await engine.resetCount == 1)
+        #expect(await engine.resetCount == 0)
         #expect(try LlamaTranscriptMapper.messages(session.transcript).contains { $0.content == raw })
         let next = LanguageModelSession(model: model)
         #expect(try await next.respond(to: "Second").content == "Fresh")
@@ -166,7 +166,7 @@ struct LlamaLanguageModelTests {
         #expect(try await LanguageModelSession(model: second).respond(to: "Proceed").content == "Independent")
         await first.cancelAndWait()
         _ = await pending.result
-        #expect(await engine.resetCount == 1)
+        #expect(await engine.resetCount == 0)
         #expect(await secondEngine.resetCount == 0)
         await first.unload()
         await second.unload()
@@ -192,6 +192,20 @@ struct LlamaLanguageModelTests {
         let session = LanguageModelSession(model: model)
         #expect(try await session.respond(to: "After unload").content == "Ready")
         #expect(factoryCalls.withLock { $0 } == 2)
+        await model.unload()
+    }
+
+    @available(iOS 27.0, macOS 27.0, *)
+    @Test("Cancellation during response preparation resets incomplete state")
+    func responsePreparationCancellation() async throws {
+        let engine = ExecutorTestEngine(scripts: [["Ready"]], blockedPreparation: ExecutorTestGate())
+        let model = LlamaLanguageModel(engineFactory: { engine })
+        let pending = Task { try await LanguageModelSession(model: model).respond(to: "First") }
+        try await engine.preparing.wait()
+        await model.cancelAndWait()
+        _ = await pending.result
+        #expect(await engine.resetCount == 1)
+        #expect(try await LanguageModelSession(model: model).respond(to: "Next").content == "Ready")
         await model.unload()
     }
 

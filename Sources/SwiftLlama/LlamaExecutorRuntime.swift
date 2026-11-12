@@ -126,10 +126,12 @@ final class LlamaExecutorRuntime: Sendable {
                 if let warmup { await Self.waitForWarmup(warmup) }
                 try Task.checkCancellation()
                 let engine = try loadEngine()
+                var prepared = false
                 do {
                     let start = ContinuousClock.now
                     let inputTokens = try await engine.prepare(messages, addingAssistant: true)
                     try Task.checkCancellation()
+                    prepared = true
                     try await engine.updateSamplingConfig(sampling)
                     var output = LlamaResponseEmitter(requestID: request.id, inputTokens: inputTokens, start: start, channel: channel)
                     output.parsesTools = messages.contains(where: \.usesLFMToolTemplate)
@@ -148,7 +150,9 @@ final class LlamaExecutorRuntime: Sendable {
                     try await output.append(await engine.finishDecoding(), countingToken: false)
                     try await output.finish()
                 } catch {
-                    await engine.resetCompletion()
+                    // A stopped decode remains reusable when the next rendered prompt has the same token prefix.
+                    // Divergent replay still goes through the engine's checked trimming/full-reprocess path.
+                    if !prepared || !(error is CancellationError) { await engine.resetCompletion() }
                     throw error
                 }
             }

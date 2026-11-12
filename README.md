@@ -229,3 +229,18 @@ names and argument schemas, and only then exposes native calls. Tool results are
 wrapped in `<tool_response>` and exact raw assistant history is retained.
 Vision, video, deferred tool discovery and forced tool choice remain unsupported.
 The legacy LFM2.5 profile and protocol remain available for installed models.
+
+Cooperative cancellation after prompt evaluation retains the decoded context.
+The next request reuses it only when its rendered tokens match the cached prefix.
+Interrupted prompt evaluation and inference failures still reset it. LFM3's hybrid
+memory cannot trim every suffix: a decoded token missing from saved replay can
+still require full reprocessing. Cancellation never adds hidden output to history
+or executes an incomplete buffered tool call.
+
+The focused native stop/continue regression uses a synthetic context and reports
+actual prompt token decodes, including a clean-context comparison for this fallback:
+
+```sh
+ENCLAVE_STOP_CACHE_MODEL=/absolute/path/LFM3-1.7B-QAD-Q4_0.gguf \
+  swift test --filter LlamaStopCacheTests
+```

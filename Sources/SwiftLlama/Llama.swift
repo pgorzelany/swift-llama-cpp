@@ -23,6 +23,7 @@ final actor Llama {
     /// Tracks the current position in the token sequence during decoding.
     var currentTokenPosition: Int32 = 0
     var processedTokens: [llama_token] = []
+    private(set) var totalPromptDecodedTokens = 0
     var usesPrefilledReasoning: Bool { thinkingEnabled && model.metaValue(forKey: "general.architecture") == "lfm3" }
 
     init(modelPath: String, config: LlamaConfig, thinkingEnabled: Bool = true) throws {
@@ -286,6 +287,7 @@ final actor Llama {
     private func processBatch() throws {
         try context.decode(batch: batch)
         let count = Int(batch.size)
+        totalPromptDecodedTokens += count
         processedTokens.append(contentsOf: UnsafeBufferPointer(start: batch.rawBatch.token, count: count))
         currentTokenPosition = Int32(processedTokens.count)
     }
