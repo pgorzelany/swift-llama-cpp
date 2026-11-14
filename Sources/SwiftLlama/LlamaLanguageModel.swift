@@ -6,6 +6,7 @@ import FoundationModels
 @available(iOS 27.0, macOS 27.0, *)
 public struct LlamaLanguageModel: LanguageModel {
     public typealias Executor = LlamaLanguageModelExecutor
+    public static let runtimeVersion = "llama.cpp-b11960"
 
     public var capabilities: LanguageModelCapabilities {
         LanguageModelCapabilities(capabilityProfile == .textOnly ? [] : [.toolCalling])
@@ -31,6 +32,11 @@ public struct LlamaLanguageModel: LanguageModel {
         } catch LlamaError.contextSizeLimitExeeded {
             throw executorConfiguration.contextSizeError
         }
+    }
+
+    /// Awaits the warmup already scheduled by Apple's session without starting another pass.
+    public func waitForScheduledWarmup() async throws {
+        try await executorConfiguration.runtime.waitForScheduledWarmup()
     }
 
     /// Counts the exact formatted prompt with the already-loaded tokenizer without changing inference state.

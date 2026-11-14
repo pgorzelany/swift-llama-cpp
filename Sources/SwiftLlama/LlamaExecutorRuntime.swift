@@ -63,6 +63,15 @@ final class LlamaExecutorRuntime: Sendable {
         } onCancel: { task.cancel() }
     }
 
+    func waitForScheduledWarmup() async throws {
+        let task = state.withLock { $0.warmup }
+        guard let task else { try Task.checkCancellation(); return }
+        try await withTaskCancellationHandler {
+            try await task.value
+            try Task.checkCancellation()
+        } onCancel: { task.cancel() }
+    }
+
     func contextUsage(_ messages: [LlamaChatMessage], addingAssistant: Bool) async throws -> LlamaContextUsage? {
         let pending = state.withLock { state -> (UUID, Task<LlamaContextUsage?, Error>)? in
             guard state.stopping == nil, let engine = state.engine else { return nil }
